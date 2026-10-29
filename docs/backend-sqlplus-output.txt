@@ -1,0 +1,341 @@
+
+> v-eats@1.0.0 sql:demo
+> node --env-file=.env.local scripts/backend-demo.mjs
+
+=== V-EATS: ORACLE SQL DEMONSTRATION ===
+
+PL/SQL procedure successfully completed.
+
+=== Menu search ===
+Multi-table JOIN, LIKE, ORDER BY
+SELECT restaurant_name, food_name, cuisine_name, type_name, price FROM menu_catalog WHERE LOWER(food_name) LIKE :term ORDER BY price, restaurant_name
+
+RESTAURANT_NAME 	       FOOD_NAME		 CUISINE_NAME	 TYPE_NAME	       PRICE
+------------------------------ ------------------------- --------------- ---------------- ----------
+PRP Canteen		       Masala Dosa		 Indian 	 Vegan			  60
+GDN Canteen		       Masala Dosa		 Indian 	 Vegan			  65
+SJT Canteen		       Masala Dosa		 Indian 	 Vegan			  70
+
+=== Best price for every dish ===
+CTE, DENSE_RANK analytic function, joins
+WITH ranked AS (SELECT m.*, DENSE_RANK() OVER (PARTITION BY food_id ORDER BY price) AS price_rank FROM menu_catalog m) SELECT food_name, restaurant_name, price, price_rank FROM ranked WHERE price_rank=1 ORDER BY food_name
+
+FOOD_NAME		  RESTAURANT_NAME		      PRICE PRICE_RANK
+------------------------- ------------------------------ ---------- ----------
+Chicken Noodle Bowl	  Technology Tower Food Court		160	     1
+Chocolate Brownie	  One Food World			 85	     1
+Classic Veg Burger	  One Food World			110	     1
+Filter Coffee		  PRP Canteen				 20	     1
+French Fries		  One Food World			 80	     1
+Garden Fresh Salad	  PRP Canteen				120	     1
+Iced Latte		  Technology Tower Food Court		 90	     1
+Idli Sambar		  PRP Canteen				 35	     1
+Margherita Pizza	  Technology Tower Food Court		180	     1
+Masala Dosa		  PRP Canteen				 60	     1
+Paneer Power Bowl	  GDN Canteen				130	     1
+Veg Fried Rice		  PRP Canteen				 95	     1
+
+12 rows selected.
+
+=== Below the restaurant average ===
+Correlated subquery, AVG, multi-table joins
+SELECT r.restaurant_name, f.food_name, m.price FROM contains m JOIN restaurant r ON r.restaurant_id=m.restaurant_id JOIN food_item f ON f.food_id=m.food_id WHERE m.price < (SELECT AVG(m2.price) FROM contains m2 WHERE m2.restaurant_id=m.restaurant_id) ORDER BY r.restaurant_name, m.price
+
+RESTAURANT_NAME 	       FOOD_NAME		      PRICE
+------------------------------ ------------------------- ----------
+GDN Canteen		       Filter Coffee			 25
+GDN Canteen		       Idli Sambar			 40
+One Food World		       French Fries			 80
+One Food World		       Chocolate Brownie		 85
+One Food World		       Iced Latte			100
+One Food World		       Classic Veg Burger		110
+PRP Canteen		       Filter Coffee			 20
+PRP Canteen		       Idli Sambar			 35
+PRP Canteen		       Masala Dosa			 60
+SJT Canteen		       Filter Coffee			 30
+SJT Canteen		       Idli Sambar			 45
+Technology Tower Food Court    Iced Latte			 90
+Technology Tower Food Court    Veg Fried Rice			110
+
+13 rows selected.
+
+=== Vegetarian dishes without listed milk ===
+NOT EXISTS anti-join, correlated subquery
+SELECT f.food_name, MIN(m.price) AS minimum_price FROM food_item f JOIN contains m ON m.food_id=f.food_id WHERE f.dietary_type_id IN ('Vegetarian','Vegan') AND NOT EXISTS (SELECT 1 FROM has_allergen a WHERE a.food_id=f.food_id AND a.allergen_id='Milk') GROUP BY f.food_id,f.food_name ORDER BY minimum_price
+
+FOOD_NAME		  MINIMUM_PRICE
+------------------------- -------------
+Idli Sambar			     35
+Masala Dosa			     60
+French Fries			     80
+Veg Fried Rice			     95
+Classic Veg Burger		    110
+Garden Fresh Salad		    120
+
+6 rows selected.
+
+=== Restaurant menu statistics ===
+LEFT JOIN, GROUP BY, HAVING, ROUND, aggregate functions
+SELECT r.restaurant_name, COUNT(m.food_id) AS dish_count, MIN(m.price) AS minimum_price, MAX(m.price) AS maximum_price, ROUND(AVG(m.price),2) AS average_price FROM restaurant r LEFT JOIN contains m ON m.restaurant_id=r.restaurant_id GROUP BY r.restaurant_id,r.restaurant_name HAVING COUNT(m.food_id)>=2 ORDER BY average_price
+
+RESTAURANT_NAME 	       DISH_COUNT MINIMUM_PRICE MAXIMUM_PRICE AVERAGE_PRICE
+------------------------------ ---------- ------------- ------------- -------------
+SJT Canteen				4	     30 	  100	      61.25
+GDN Canteen				4	     25 	  130		 65
+PRP Canteen				5	     20 	  120		 66
+One Food World				5	     80 	  200		115
+Technology Tower Food Court		5	     90 	  180		137
+
+=== Allergen profile by dish ===
+LISTAGG, outer joins, NVL
+SELECT f.food_name, NVL(LISTAGG(a.allergen_name, ', ') WITHIN GROUP (ORDER BY a.allergen_name),'None listed') AS listed_allergens FROM food_item f LEFT JOIN has_allergen h ON h.food_id=f.food_id LEFT JOIN allergen a ON a.allergen_id=h.allergen_id GROUP BY f.food_id,f.food_name ORDER BY f.food_name
+
+FOOD_NAME		  LISTED_ALLERGENS
+------------------------- ----------------------------
+Chicken Noodle Bowl	  Gluten, Soy
+Chocolate Brownie	  Gluten, Milk, Nuts
+Classic Veg Burger	  Gluten
+Filter Coffee		  Milk
+French Fries		  None listed
+Garden Fresh Salad	  None listed
+Iced Latte		  Milk
+Idli Sambar		  None listed
+Margherita Pizza	  Gluten, Milk
+Masala Dosa		  None listed
+Paneer Power Bowl	  Milk
+Veg Fried Rice		  Soy
+
+12 rows selected.
+
+=== Outlets serving every vegan dish ===
+Relational division using double NOT EXISTS
+SELECT r.restaurant_name FROM restaurant r WHERE NOT EXISTS (SELECT 1 FROM food_item f WHERE f.dietary_type_id='Vegan' AND NOT EXISTS (SELECT 1 FROM contains m WHERE m.restaurant_id=r.restaurant_id AND m.food_id=f.food_id)) ORDER BY r.restaurant_name
+
+no rows selected
+
+=== Dishes with multiple prices ===
+GROUP BY, HAVING, MAX-MIN, COUNT DISTINCT
+SELECT f.food_name,COUNT(DISTINCT m.restaurant_id) AS outlets,MIN(m.price) AS lowest,MAX(m.price) AS highest,MAX(m.price)-MIN(m.price) AS saving FROM food_item f JOIN contains m ON m.food_id=f.food_id GROUP BY f.food_id,f.food_name HAVING COUNT(DISTINCT m.restaurant_id)>1 ORDER BY saving DESC
+
+FOOD_NAME		     OUTLETS	 LOWEST    HIGHEST     SAVING
+------------------------- ---------- ---------- ---------- ----------
+Margherita Pizza		   2	    180        200	   20
+Veg Fried Rice			   3	     95        110	   15
+Paneer Power Bowl		   2	    130        145	   15
+Idli Sambar			   3	     35 	45	   10
+Filter Coffee			   3	     20 	30	   10
+Iced Latte			   2	     90        100	   10
+Masala Dosa			   3	     60 	70	   10
+
+7 rows selected.
+
+=== Indian dishes also listed under meals ===
+INTERSECT set operator, subqueries
+SELECT food_name FROM food_item WHERE cuisine_id='Indian' INTERSECT SELECT food_name FROM food_item WHERE category_id='Meals' ORDER BY food_name
+
+FOOD_NAME
+-------------------------
+Idli Sambar
+Masala Dosa
+Paneer Power Bowl
+
+=== Formatted restaurant directory ===
+UPPER, SUBSTR, LENGTH, TO_CHAR date functions
+SELECT UPPER(restaurant_name) AS restaurant, SUBSTR(landmark,1,35) AS location, LENGTH(restaurant_name) AS name_length, TO_CHAR(created_at,'DD-MON-YYYY') AS added_on FROM restaurant ORDER BY restaurant_name
+
+RESTAURANT		       LOCATION 			   NAME_LENGTH ADDED_ON
+------------------------------ ----------------------------------- ----------- --------------------
+GDN CANTEEN		       G. D. Naidu Block, VIT Vellore		    11 29-OCT-2026
+ONE FOOD WORLD		       Gorbachev Road, VIT Vellore		    14 29-OCT-2026
+PRP CANTEEN		       Pearl Research Park, VIT Vellore 	    11 29-OCT-2026
+SJT CANTEEN		       Silver Jubilee Tower, VIT Vellore	    11 29-OCT-2026
+TECHNOLOGY TOWER FOOD COURT    Near Technology Tower, VIT Vellore	    27 29-OCT-2026
+
+=== Live integrity constraints ===
+Oracle data dictionary
+SELECT table_name,constraint_name,constraint_type,status FROM user_constraints WHERE table_name IN ('RESTAURANT','FOOD_ITEM','CATEGORY','CUISINE','DIETARY_TYPE','ALLERGEN','CONTAINS','HAS_ALLERGEN') ORDER BY table_name,constraint_type
+
+TABLE_NAME	   CONSTRAINT_NAME		CONST STATUS
+------------------ ---------------------------- ----- ----------
+ALLERGEN	   SYS_C008717			C     ENABLED
+ALLERGEN	   SYS_C008718			P     ENABLED
+ALLERGEN	   SYS_C008719			U     ENABLED
+CATEGORY	   SYS_C008708			C     ENABLED
+CATEGORY	   SYS_C008709			P     ENABLED
+CATEGORY	   SYS_C008710			U     ENABLED
+CONTAINS	   SYS_C008737			C     ENABLED
+CONTAINS	   SYS_C008738			C     ENABLED
+CONTAINS	   SYS_C008739			C     ENABLED
+CONTAINS	   CONTAINS_PK			P     ENABLED
+CONTAINS	   SYS_C008742			R     ENABLED
+CONTAINS	   SYS_C008741			R     ENABLED
+CUISINE 	   SYS_C008711			C     ENABLED
+CUISINE 	   SYS_C008712			P     ENABLED
+CUISINE 	   SYS_C008713			U     ENABLED
+DIETARY_TYPE	   SYS_C008714			C     ENABLED
+DIETARY_TYPE	   SYS_C008715			P     ENABLED
+DIETARY_TYPE	   SYS_C008716			U     ENABLED
+FOOD_ITEM	   SYS_C008732			C     ENABLED
+FOOD_ITEM	   SYS_C008731			C     ENABLED
+FOOD_ITEM	   SYS_C008730			C     ENABLED
+FOOD_ITEM	   SYS_C008728			C     ENABLED
+FOOD_ITEM	   SYS_C008729			C     ENABLED
+FOOD_ITEM	   SYS_C008733			P     ENABLED
+FOOD_ITEM	   SYS_C008734			R     ENABLED
+FOOD_ITEM	   SYS_C008735			R     ENABLED
+FOOD_ITEM	   SYS_C008736			R     ENABLED
+HAS_ALLERGEN	   HAS_ALLERGEN_PK		P     ENABLED
+HAS_ALLERGEN	   SYS_C008744			R     ENABLED
+HAS_ALLERGEN	   SYS_C008745			R     ENABLED
+RESTAURANT	   SYS_C008721			C     ENABLED
+RESTAURANT	   SYS_C008722			C     ENABLED
+RESTAURANT	   SYS_C008723			C     ENABLED
+RESTAURANT	   SYS_C008724			C     ENABLED
+RESTAURANT	   SYS_C008725			C     ENABLED
+RESTAURANT	   SYS_C008720			C     ENABLED
+RESTAURANT	   SYS_C008726			P     ENABLED
+RESTAURANT	   SYS_C008727			U     ENABLED
+
+38 rows selected.
+
+=== Live table definitions ===
+Oracle data dictionary, DDL verification
+SELECT table_name,column_name,data_type,data_length,nullable FROM user_tab_columns WHERE table_name IN ('RESTAURANT','FOOD_ITEM','CATEGORY','CUISINE','DIETARY_TYPE','ALLERGEN','CONTAINS','HAS_ALLERGEN') ORDER BY table_name,column_id
+
+TABLE_NAME	   COLUMN_NAME		  DATA_TYPE    DATA_LENGTH NULLABLE
+------------------ ---------------------- ------------ ----------- --------
+ALLERGEN	   ALLERGEN_ID		  VARCHAR2		40 N
+ALLERGEN	   ALLERGEN_NAME	  VARCHAR2		80 N
+CATEGORY	   CATEGORY_ID		  VARCHAR2		40 N
+CATEGORY	   CATEGORY_NAME	  VARCHAR2		80 N
+CONTAINS	   RESTAURANT_ID	  VARCHAR2		40 N
+CONTAINS	   FOOD_ID		  VARCHAR2		40 N
+CONTAINS	   PRICE		  NUMBER		22 N
+CONTAINS	   PRICE_NOTE		  VARCHAR2	       250 N
+CUISINE 	   CUISINE_ID		  VARCHAR2		40 N
+CUISINE 	   CUISINE_NAME 	  VARCHAR2		80 N
+DIETARY_TYPE	   DIETARY_TYPE_ID	  VARCHAR2		40 N
+DIETARY_TYPE	   TYPE_NAME		  VARCHAR2		80 N
+FOOD_ITEM	   FOOD_ID		  VARCHAR2		40 N
+FOOD_ITEM	   FOOD_NAME		  VARCHAR2	       120 N
+FOOD_ITEM	   CATEGORY_ID		  VARCHAR2		40 N
+FOOD_ITEM	   CUISINE_ID		  VARCHAR2		40 N
+FOOD_ITEM	   DIETARY_TYPE_ID	  VARCHAR2		40 N
+FOOD_ITEM	   DESCRIPTION		  VARCHAR2	      1000 Y
+FOOD_ITEM	   IMAGE		  VARCHAR2	       180 Y
+FOOD_ITEM	   CREATED_AT		  TIMESTAMP(6)		11 N
+HAS_ALLERGEN	   FOOD_ID		  VARCHAR2		40 N
+HAS_ALLERGEN	   ALLERGEN_ID		  VARCHAR2		40 N
+RESTAURANT	   RESTAURANT_ID	  VARCHAR2		40 N
+RESTAURANT	   RESTAURANT_NAME	  VARCHAR2	       120 N
+RESTAURANT	   BLOCK		  VARCHAR2		80 N
+RESTAURANT	   LANDMARK		  VARCHAR2	       180 N
+RESTAURANT	   MUST_HAVE		  VARCHAR2	      1000 N
+RESTAURANT	   IMAGE		  VARCHAR2	       180 Y
+RESTAURANT	   SOURCE_URL		  VARCHAR2	       500 Y
+RESTAURANT	   SOURCE_NOTE		  VARCHAR2	       500 Y
+RESTAURANT	   CREATED_AT		  TIMESTAMP(6)		11 N
+
+31 rows selected.
+
+
+1 row created.
+
+
+Commit complete.
+
+
+CATEGORY_ID				 CATEGORY_NAME
+---------------------------------------- --------------------------------------------------------------------------------
+DEMO_TCL				 Transaction demonstration
+
+1 row selected.
+
+
+Savepoint created.
+
+
+1 row updated.
+
+
+CATEGORY_ID				 CATEGORY_NAME
+---------------------------------------- --------------------------------------------------------------------------------
+DEMO_TCL				 Temporary update
+
+1 row selected.
+
+
+Rollback complete.
+
+
+CATEGORY_ID				 CATEGORY_NAME
+---------------------------------------- --------------------------------------------------------------------------------
+DEMO_TCL				 Transaction demonstration
+
+1 row selected.
+
+
+1 row deleted.
+
+
+AFTER_DELETE
+------------
+	   0
+
+1 row selected.
+
+
+Rollback complete.
+
+
+AFTER_ROLLBACK
+--------------
+	     1
+
+1 row selected.
+
+
+1 row deleted.
+
+
+Commit complete.
+
+
+AFTER_COMMITTED_DELETE
+----------------------
+		     0
+
+1 row selected.
+
+
+Table created.
+
+
+Table altered.
+
+
+1 row created.
+
+
+Commit complete.
+
+
+   DEMO_ID NOTE 				    CREATED_ON
+---------- ---------------------------------------- ------------------
+	 1 DDL demonstration			    29-OCT-26
+
+1 row selected.
+
+
+Table truncated.
+
+
+AFTER_TRUNCATE
+--------------
+	     0
+
+1 row selected.
+
+
+Table dropped.
+

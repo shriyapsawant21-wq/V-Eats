@@ -1,52 +1,59 @@
-# V-Eats
+# V-Eats — VIT Vellore / Oracle SQL project
 
-A responsive campus food discovery mockup built with Next.js App Router, TypeScript, React and MongoDB. Includes search, category/cuisine/diet/location filters, allergen exclusions, persistent browser favourites, restaurant menus, dish details and price comparisons.
+Next.js frontend and API, connected to a real local Oracle Database Free instance through node-oracledb Thin mode. All catalog reads, management changes and SQL demonstrations use the same VEATS_APP schema in FREEPDB1. MongoDB is no longer used by this app.
 
-## Run locally
+## Start for the demo
 
-```powershell
-npm install
-npm run dev
-```
+1. Open Docker Desktop and wait for the engine.
+2. `docker start oracle-free` (the existing Oracle container on this machine).
+3. `npm install` if dependencies are absent.
+4. `npm run dev`.
+5. Open http://localhost:3000.
 
-Open http://localhost:3000. No database is required for the seeded demo. Restaurant names, ratings, timings, menus and allergen information are fictional sample content. Photography is loaded from Unsplash; fonts load from Google Fonts.
+The existing `.env.local` contains the Oracle connection and an admin key. Do not include it in the report or commit it. Copy its `ADMIN_TOKEN` value into the sign-in form at `/manage` or `/demo`. Admin sessions expire after eight hours. The key is not an Oracle password.
 
-## Connect MongoDB
+## Pages
 
-Copy `.env.example` to `.env.local`, then set `MONGODB_URI` to a local MongoDB instance or Atlas connection string. Keep credentials out of Git. Seed the connected database (Node 22.6+):
+| URL | Function |
+| --- | --- |
+| `/` | Oracle-backed discovery, search and category/cuisine/diet/location/allergen filters; restaurant menus; price comparison; browser favourites |
+| `/manage` | Authenticated Insert, Display, Search, Update and Delete for all eight entities, including relationship updates |
+| `/demo` | Twelve live predefined SELECT demonstrations, plus an isolated live transaction demonstration |
+| `/sources` | Research sources and explicit data limitations |
 
-```powershell
-node --env-file=.env.local --experimental-strip-types scripts/seed.ts
-```
+## Setup on this machine
 
-Restart the app after changing environment variables. Seeding creates unique indexes and inserts missing example records without overwriting existing records. With a configured but unavailable database the API returns HTTP 503; the UI explicitly reports the failure and displays sample data.
+`npm run db:setup` creates VEATS_APP inside the existing local Oracle container using SYSDBA over docker exec. It writes random credentials into ignored `.env.local`; it does not overwrite other schemas or reset an existing password. `npm run seed` creates missing project tables and inserts missing seed records. It preserves existing records. `sql/02-seed.sql` is the generated plain SQL seed for a new empty schema and should be run only once.
 
-## Schema mapping
+For another Oracle installation, create a schema using `sql/00-create-user.sql`, configure `.env.local` from `.env.example`, then run `npm run seed`. Oracle Database Free installation supplies the FREE CDB and FREEPDB1 PDB; application setup creates a user/schema inside that PDB rather than creating a second database instance. The app user has CREATE SESSION, CREATE TABLE, CREATE VIEW and a bounded tablespace quota.
 
-| Original entity | MongoDB collection | Fields / relationships |
-| --- | --- | --- |
-| Restaurant | restaurants | id, name, block, landmark, mustHave[] |
-| Food_Item | foods | id, name, categoryId, cuisineId, dietaryTypeId |
-| Contains | contains | restaurantId + foodId (unique pair), price in INR |
-| Category | categories | id, name |
-| Cuisine | cuisines | id, name |
-| Dietary_Type | dietaryTypes | id, name |
-| Allergen | allergens | id, name |
-| Has_Allergen | hasAllergen | foodId + allergenId (unique pair) |
+## Schema
 
-Category, cuisine and dietary type each have a one-to-many relationship with food. Restaurants and foods have a many-to-many relationship through Contains. Foods and allergens have a many-to-many relationship through Has_Allergen; no duplicate allergen foreign key is stored on Food_Item. Human-readable lookup IDs are used consistently in this mockup. MongoDB references are application-managed, not SQL foreign keys. Presentation fields such as images, descriptions, ratings and preparation times extend the supplied schema.
+Eight tables: RESTAURANT, FOOD_ITEM, CATEGORY, CUISINE, DIETARY_TYPE, ALLERGEN, CONTAINS, HAS_ALLERGEN. See `sql/01-schema.sql` for exact types, primary and foreign keys, uniqueness, NOT NULL and CHECK constraints. Menus and allergens have composite primary keys. A MENU_CATALOG view joins six tables. Foreign keys use restrictive deletion: delete dependent menu/allergen links first. Restaurant must-have values are a JSON string array in MUST_HAVE, preserving the supplied multivalued attribute without a ninth table. BLOCK and LANDMARK flatten the location composite attribute.
 
-## Backend endpoints
+The handwritten relational list omitted RESTAURANT_ID from CONTAINS and redundantly included ALLERGEN_ID on FOOD_ITEM. This implementation follows the ER diagram: CONTAINS has both IDs; allergens are linked only through HAS_ALLERGEN. Lookup IDs are human-readable strings and their names currently equal IDs. Optional photo/source/description fields extend the original academic schema.
 
-- `GET /api/catalog`: full catalog and demo/MongoDB mode.
-- `GET /api/restaurants`: restaurant directory.
-- `GET /api/foods?q=paneer`: searchable food list.
+## Data
 
-This is a discovery prototype. Ordering, payments, authentication and restaurant administration are not implemented. Favourites are stored on this browser. Allergy data must be confirmed with the restaurant.
+Five researched VIT outlet locations, twelve sample dishes, twenty-three sample restaurant prices and twelve sample allergen links. All menu items/prices/dietary and allergen classifications are demonstration data. Current campus menus and prices could not be verified. Source URLs are stored with outlets and documented in `/sources` and `docs/data-sources.md`. Images are illustrative Unsplash photos. Ratings and preparation times are not fabricated or displayed. The interface uses a readable Arial/Helvetica sans-serif stack. The custom display fonts are no longer used.
 
-## Validation
+## Verification and submission artifacts
 
 ```powershell
 npm run build
 npm run typecheck
+npm test
+npm run db:capture
+ npm run db:audit
+ npm run sql:demo
 ```
+
+The app must run for `npm test`. It tests every entity, all four write/read operations, commit visibility, rollback, FK/PK constraints and all live reports, then removes its unique temporary records. `db:capture` executes SELECT, DDL, DML and TCL statements and captures real Oracle output in `docs/oracle-outputs.md` and `.json`. It creates/drops only a dedicated scratch table and cleans its own transaction record.
+
+- `docs/submission-checklist.md`: exact requirements/status and group module suggestions.
+- `docs/demo-guide.md`: presentation walkthrough.
+- `docs/final-project-report.md`: report draft with executed SQL and outputs; add group member names and exact lab-sheet mapping before submission.
+- `docs/integration-results.md`: API/Oracle integration evidence.
+- `sql/00-create-user.sql` through `sql/05-ddl-demo.sql`: SQL implementation and SQL*Plus-compatible demonstration scripts.
+
+Exact coverage of Laboratory Cycle Sheets I–VI is pending those sheets. No claim is made that every unseen lab exercise is covered. End-user accounts, ordering, payment and deployment are outside this food-discovery database project. Saved dishes are localStorage, not a database user module.

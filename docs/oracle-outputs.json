@@ -1,0 +1,1037 @@
+{
+  "executedAt": "2026-10-29T14:32:00.593Z",
+  "database": "Oracle FREEPDB1 / VEATS_APP",
+  "outputs": [
+    {
+      "title": "Menu search",
+      "sql": "SELECT restaurant_name, food_name, cuisine_name, type_name, price FROM menu_catalog WHERE LOWER(food_name) LIKE :term ORDER BY price, restaurant_name",
+      "rows": [
+        {
+          "RESTAURANT_NAME": "PRP Canteen",
+          "FOOD_NAME": "Masala Dosa",
+          "CUISINE_NAME": "Indian",
+          "TYPE_NAME": "Vegan",
+          "PRICE": 60
+        },
+        {
+          "RESTAURANT_NAME": "GDN Canteen",
+          "FOOD_NAME": "Masala Dosa",
+          "CUISINE_NAME": "Indian",
+          "TYPE_NAME": "Vegan",
+          "PRICE": 65
+        },
+        {
+          "RESTAURANT_NAME": "SJT Canteen",
+          "FOOD_NAME": "Masala Dosa",
+          "CUISINE_NAME": "Indian",
+          "TYPE_NAME": "Vegan",
+          "PRICE": 70
+        }
+      ]
+    },
+    {
+      "title": "Best price for every dish",
+      "sql": "WITH ranked AS (SELECT m.*, DENSE_RANK() OVER (PARTITION BY food_id ORDER BY price) AS price_rank FROM menu_catalog m) SELECT food_name, restaurant_name, price, price_rank FROM ranked WHERE price_rank=1 ORDER BY food_name",
+      "rows": [
+        {
+          "FOOD_NAME": "Chicken Noodle Bowl",
+          "RESTAURANT_NAME": "Technology Tower Food Court",
+          "PRICE": 160,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Chocolate Brownie",
+          "RESTAURANT_NAME": "One Food World",
+          "PRICE": 85,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Classic Veg Burger",
+          "RESTAURANT_NAME": "One Food World",
+          "PRICE": 110,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Filter Coffee",
+          "RESTAURANT_NAME": "PRP Canteen",
+          "PRICE": 20,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "French Fries",
+          "RESTAURANT_NAME": "One Food World",
+          "PRICE": 80,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Garden Fresh Salad",
+          "RESTAURANT_NAME": "PRP Canteen",
+          "PRICE": 120,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Iced Latte",
+          "RESTAURANT_NAME": "Technology Tower Food Court",
+          "PRICE": 90,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Idli Sambar",
+          "RESTAURANT_NAME": "PRP Canteen",
+          "PRICE": 35,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Margherita Pizza",
+          "RESTAURANT_NAME": "Technology Tower Food Court",
+          "PRICE": 180,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Masala Dosa",
+          "RESTAURANT_NAME": "PRP Canteen",
+          "PRICE": 60,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Paneer Power Bowl",
+          "RESTAURANT_NAME": "GDN Canteen",
+          "PRICE": 130,
+          "PRICE_RANK": 1
+        },
+        {
+          "FOOD_NAME": "Veg Fried Rice",
+          "RESTAURANT_NAME": "PRP Canteen",
+          "PRICE": 95,
+          "PRICE_RANK": 1
+        }
+      ]
+    },
+    {
+      "title": "Below the restaurant average",
+      "sql": "SELECT r.restaurant_name, f.food_name, m.price FROM contains m JOIN restaurant r ON r.restaurant_id=m.restaurant_id JOIN food_item f ON f.food_id=m.food_id WHERE m.price < (SELECT AVG(m2.price) FROM contains m2 WHERE m2.restaurant_id=m.restaurant_id) ORDER BY r.restaurant_name, m.price",
+      "rows": [
+        {
+          "RESTAURANT_NAME": "GDN Canteen",
+          "FOOD_NAME": "Filter Coffee",
+          "PRICE": 25
+        },
+        {
+          "RESTAURANT_NAME": "GDN Canteen",
+          "FOOD_NAME": "Idli Sambar",
+          "PRICE": 40
+        },
+        {
+          "RESTAURANT_NAME": "One Food World",
+          "FOOD_NAME": "French Fries",
+          "PRICE": 80
+        },
+        {
+          "RESTAURANT_NAME": "One Food World",
+          "FOOD_NAME": "Chocolate Brownie",
+          "PRICE": 85
+        },
+        {
+          "RESTAURANT_NAME": "One Food World",
+          "FOOD_NAME": "Iced Latte",
+          "PRICE": 100
+        },
+        {
+          "RESTAURANT_NAME": "One Food World",
+          "FOOD_NAME": "Classic Veg Burger",
+          "PRICE": 110
+        },
+        {
+          "RESTAURANT_NAME": "PRP Canteen",
+          "FOOD_NAME": "Filter Coffee",
+          "PRICE": 20
+        },
+        {
+          "RESTAURANT_NAME": "PRP Canteen",
+          "FOOD_NAME": "Idli Sambar",
+          "PRICE": 35
+        },
+        {
+          "RESTAURANT_NAME": "PRP Canteen",
+          "FOOD_NAME": "Masala Dosa",
+          "PRICE": 60
+        },
+        {
+          "RESTAURANT_NAME": "SJT Canteen",
+          "FOOD_NAME": "Filter Coffee",
+          "PRICE": 30
+        },
+        {
+          "RESTAURANT_NAME": "SJT Canteen",
+          "FOOD_NAME": "Idli Sambar",
+          "PRICE": 45
+        },
+        {
+          "RESTAURANT_NAME": "Technology Tower Food Court",
+          "FOOD_NAME": "Iced Latte",
+          "PRICE": 90
+        },
+        {
+          "RESTAURANT_NAME": "Technology Tower Food Court",
+          "FOOD_NAME": "Veg Fried Rice",
+          "PRICE": 110
+        }
+      ]
+    },
+    {
+      "title": "Vegetarian dishes without listed milk",
+      "sql": "SELECT f.food_name, MIN(m.price) AS minimum_price FROM food_item f JOIN contains m ON m.food_id=f.food_id WHERE f.dietary_type_id IN ('Vegetarian','Vegan') AND NOT EXISTS (SELECT 1 FROM has_allergen a WHERE a.food_id=f.food_id AND a.allergen_id='Milk') GROUP BY f.food_id,f.food_name ORDER BY minimum_price",
+      "rows": [
+        {
+          "FOOD_NAME": "Idli Sambar",
+          "MINIMUM_PRICE": 35
+        },
+        {
+          "FOOD_NAME": "Masala Dosa",
+          "MINIMUM_PRICE": 60
+        },
+        {
+          "FOOD_NAME": "French Fries",
+          "MINIMUM_PRICE": 80
+        },
+        {
+          "FOOD_NAME": "Veg Fried Rice",
+          "MINIMUM_PRICE": 95
+        },
+        {
+          "FOOD_NAME": "Classic Veg Burger",
+          "MINIMUM_PRICE": 110
+        },
+        {
+          "FOOD_NAME": "Garden Fresh Salad",
+          "MINIMUM_PRICE": 120
+        }
+      ]
+    },
+    {
+      "title": "Restaurant menu statistics",
+      "sql": "SELECT r.restaurant_name, COUNT(m.food_id) AS dish_count, MIN(m.price) AS minimum_price, MAX(m.price) AS maximum_price, ROUND(AVG(m.price),2) AS average_price FROM restaurant r LEFT JOIN contains m ON m.restaurant_id=r.restaurant_id GROUP BY r.restaurant_id,r.restaurant_name HAVING COUNT(m.food_id)>=2 ORDER BY average_price",
+      "rows": [
+        {
+          "RESTAURANT_NAME": "SJT Canteen",
+          "DISH_COUNT": 4,
+          "MINIMUM_PRICE": 30,
+          "MAXIMUM_PRICE": 100,
+          "AVERAGE_PRICE": 61.25
+        },
+        {
+          "RESTAURANT_NAME": "GDN Canteen",
+          "DISH_COUNT": 4,
+          "MINIMUM_PRICE": 25,
+          "MAXIMUM_PRICE": 130,
+          "AVERAGE_PRICE": 65
+        },
+        {
+          "RESTAURANT_NAME": "PRP Canteen",
+          "DISH_COUNT": 5,
+          "MINIMUM_PRICE": 20,
+          "MAXIMUM_PRICE": 120,
+          "AVERAGE_PRICE": 66
+        },
+        {
+          "RESTAURANT_NAME": "One Food World",
+          "DISH_COUNT": 5,
+          "MINIMUM_PRICE": 80,
+          "MAXIMUM_PRICE": 200,
+          "AVERAGE_PRICE": 115
+        },
+        {
+          "RESTAURANT_NAME": "Technology Tower Food Court",
+          "DISH_COUNT": 5,
+          "MINIMUM_PRICE": 90,
+          "MAXIMUM_PRICE": 180,
+          "AVERAGE_PRICE": 137
+        }
+      ]
+    },
+    {
+      "title": "Allergen profile by dish",
+      "sql": "SELECT f.food_name, NVL(LISTAGG(a.allergen_name, ', ') WITHIN GROUP (ORDER BY a.allergen_name),'None listed') AS listed_allergens FROM food_item f LEFT JOIN has_allergen h ON h.food_id=f.food_id LEFT JOIN allergen a ON a.allergen_id=h.allergen_id GROUP BY f.food_id,f.food_name ORDER BY f.food_name",
+      "rows": [
+        {
+          "FOOD_NAME": "Chicken Noodle Bowl",
+          "LISTED_ALLERGENS": "Gluten, Soy"
+        },
+        {
+          "FOOD_NAME": "Chocolate Brownie",
+          "LISTED_ALLERGENS": "Gluten, Milk, Nuts"
+        },
+        {
+          "FOOD_NAME": "Classic Veg Burger",
+          "LISTED_ALLERGENS": "Gluten"
+        },
+        {
+          "FOOD_NAME": "Filter Coffee",
+          "LISTED_ALLERGENS": "Milk"
+        },
+        {
+          "FOOD_NAME": "French Fries",
+          "LISTED_ALLERGENS": "None listed"
+        },
+        {
+          "FOOD_NAME": "Garden Fresh Salad",
+          "LISTED_ALLERGENS": "None listed"
+        },
+        {
+          "FOOD_NAME": "Iced Latte",
+          "LISTED_ALLERGENS": "Milk"
+        },
+        {
+          "FOOD_NAME": "Idli Sambar",
+          "LISTED_ALLERGENS": "None listed"
+        },
+        {
+          "FOOD_NAME": "Margherita Pizza",
+          "LISTED_ALLERGENS": "Gluten, Milk"
+        },
+        {
+          "FOOD_NAME": "Masala Dosa",
+          "LISTED_ALLERGENS": "None listed"
+        },
+        {
+          "FOOD_NAME": "Paneer Power Bowl",
+          "LISTED_ALLERGENS": "Milk"
+        },
+        {
+          "FOOD_NAME": "Veg Fried Rice",
+          "LISTED_ALLERGENS": "Soy"
+        }
+      ]
+    },
+    {
+      "title": "Outlets serving every vegan dish",
+      "sql": "SELECT r.restaurant_name FROM restaurant r WHERE NOT EXISTS (SELECT 1 FROM food_item f WHERE f.dietary_type_id='Vegan' AND NOT EXISTS (SELECT 1 FROM contains m WHERE m.restaurant_id=r.restaurant_id AND m.food_id=f.food_id)) ORDER BY r.restaurant_name",
+      "rows": []
+    },
+    {
+      "title": "Dishes with multiple prices",
+      "sql": "SELECT f.food_name,COUNT(DISTINCT m.restaurant_id) AS outlets,MIN(m.price) AS lowest,MAX(m.price) AS highest,MAX(m.price)-MIN(m.price) AS saving FROM food_item f JOIN contains m ON m.food_id=f.food_id GROUP BY f.food_id,f.food_name HAVING COUNT(DISTINCT m.restaurant_id)>1 ORDER BY saving DESC",
+      "rows": [
+        {
+          "FOOD_NAME": "Margherita Pizza",
+          "OUTLETS": 2,
+          "LOWEST": 180,
+          "HIGHEST": 200,
+          "SAVING": 20
+        },
+        {
+          "FOOD_NAME": "Veg Fried Rice",
+          "OUTLETS": 3,
+          "LOWEST": 95,
+          "HIGHEST": 110,
+          "SAVING": 15
+        },
+        {
+          "FOOD_NAME": "Paneer Power Bowl",
+          "OUTLETS": 2,
+          "LOWEST": 130,
+          "HIGHEST": 145,
+          "SAVING": 15
+        },
+        {
+          "FOOD_NAME": "Idli Sambar",
+          "OUTLETS": 3,
+          "LOWEST": 35,
+          "HIGHEST": 45,
+          "SAVING": 10
+        },
+        {
+          "FOOD_NAME": "Filter Coffee",
+          "OUTLETS": 3,
+          "LOWEST": 20,
+          "HIGHEST": 30,
+          "SAVING": 10
+        },
+        {
+          "FOOD_NAME": "Iced Latte",
+          "OUTLETS": 2,
+          "LOWEST": 90,
+          "HIGHEST": 100,
+          "SAVING": 10
+        },
+        {
+          "FOOD_NAME": "Masala Dosa",
+          "OUTLETS": 3,
+          "LOWEST": 60,
+          "HIGHEST": 70,
+          "SAVING": 10
+        }
+      ]
+    },
+    {
+      "title": "Indian dishes also listed under meals",
+      "sql": "SELECT food_name FROM food_item WHERE cuisine_id='Indian' INTERSECT SELECT food_name FROM food_item WHERE category_id='Meals' ORDER BY food_name",
+      "rows": [
+        {
+          "FOOD_NAME": "Idli Sambar"
+        },
+        {
+          "FOOD_NAME": "Masala Dosa"
+        },
+        {
+          "FOOD_NAME": "Paneer Power Bowl"
+        }
+      ]
+    },
+    {
+      "title": "Formatted restaurant directory",
+      "sql": "SELECT UPPER(restaurant_name) AS restaurant, SUBSTR(landmark,1,35) AS location, LENGTH(restaurant_name) AS name_length, TO_CHAR(created_at,'DD-MON-YYYY') AS added_on FROM restaurant ORDER BY restaurant_name",
+      "rows": [
+        {
+          "RESTAURANT": "GDN CANTEEN",
+          "LOCATION": "G. D. Naidu Block, VIT Vellore",
+          "NAME_LENGTH": 11,
+          "ADDED_ON": "29-OCT-2026"
+        },
+        {
+          "RESTAURANT": "ONE FOOD WORLD",
+          "LOCATION": "Gorbachev Road, VIT Vellore",
+          "NAME_LENGTH": 14,
+          "ADDED_ON": "29-OCT-2026"
+        },
+        {
+          "RESTAURANT": "PRP CANTEEN",
+          "LOCATION": "Pearl Research Park, VIT Vellore",
+          "NAME_LENGTH": 11,
+          "ADDED_ON": "29-OCT-2026"
+        },
+        {
+          "RESTAURANT": "SJT CANTEEN",
+          "LOCATION": "Silver Jubilee Tower, VIT Vellore",
+          "NAME_LENGTH": 11,
+          "ADDED_ON": "29-OCT-2026"
+        },
+        {
+          "RESTAURANT": "TECHNOLOGY TOWER FOOD COURT",
+          "LOCATION": "Near Technology Tower, VIT Vellore",
+          "NAME_LENGTH": 27,
+          "ADDED_ON": "29-OCT-2026"
+        }
+      ]
+    },
+    {
+      "title": "Live integrity constraints",
+      "sql": "SELECT table_name,constraint_name,constraint_type,status FROM user_constraints WHERE table_name IN ('RESTAURANT','FOOD_ITEM','CATEGORY','CUISINE','DIETARY_TYPE','ALLERGEN','CONTAINS','HAS_ALLERGEN') ORDER BY table_name,constraint_type",
+      "rows": [
+        {
+          "TABLE_NAME": "ALLERGEN",
+          "CONSTRAINT_NAME": "SYS_C008717",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "ALLERGEN",
+          "CONSTRAINT_NAME": "SYS_C008718",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "ALLERGEN",
+          "CONSTRAINT_NAME": "SYS_C008719",
+          "CONSTRAINT_TYPE": "U",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CATEGORY",
+          "CONSTRAINT_NAME": "SYS_C008708",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CATEGORY",
+          "CONSTRAINT_NAME": "SYS_C008709",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CATEGORY",
+          "CONSTRAINT_NAME": "SYS_C008710",
+          "CONSTRAINT_TYPE": "U",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "CONSTRAINT_NAME": "SYS_C008737",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "CONSTRAINT_NAME": "SYS_C008738",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "CONSTRAINT_NAME": "SYS_C008739",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "CONSTRAINT_NAME": "CONTAINS_PK",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "CONSTRAINT_NAME": "SYS_C008742",
+          "CONSTRAINT_TYPE": "R",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "CONSTRAINT_NAME": "SYS_C008741",
+          "CONSTRAINT_TYPE": "R",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CUISINE",
+          "CONSTRAINT_NAME": "SYS_C008711",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CUISINE",
+          "CONSTRAINT_NAME": "SYS_C008712",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "CUISINE",
+          "CONSTRAINT_NAME": "SYS_C008713",
+          "CONSTRAINT_TYPE": "U",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "DIETARY_TYPE",
+          "CONSTRAINT_NAME": "SYS_C008714",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "DIETARY_TYPE",
+          "CONSTRAINT_NAME": "SYS_C008715",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "DIETARY_TYPE",
+          "CONSTRAINT_NAME": "SYS_C008716",
+          "CONSTRAINT_TYPE": "U",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008732",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008731",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008730",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008728",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008729",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008733",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008734",
+          "CONSTRAINT_TYPE": "R",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008735",
+          "CONSTRAINT_TYPE": "R",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "CONSTRAINT_NAME": "SYS_C008736",
+          "CONSTRAINT_TYPE": "R",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "HAS_ALLERGEN",
+          "CONSTRAINT_NAME": "HAS_ALLERGEN_PK",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "HAS_ALLERGEN",
+          "CONSTRAINT_NAME": "SYS_C008744",
+          "CONSTRAINT_TYPE": "R",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "HAS_ALLERGEN",
+          "CONSTRAINT_NAME": "SYS_C008745",
+          "CONSTRAINT_TYPE": "R",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008721",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008722",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008723",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008724",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008725",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008720",
+          "CONSTRAINT_TYPE": "C",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008726",
+          "CONSTRAINT_TYPE": "P",
+          "STATUS": "ENABLED"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "CONSTRAINT_NAME": "SYS_C008727",
+          "CONSTRAINT_TYPE": "U",
+          "STATUS": "ENABLED"
+        }
+      ]
+    },
+    {
+      "title": "Live table definitions",
+      "sql": "SELECT table_name,column_name,data_type,data_length,nullable FROM user_tab_columns WHERE table_name IN ('RESTAURANT','FOOD_ITEM','CATEGORY','CUISINE','DIETARY_TYPE','ALLERGEN','CONTAINS','HAS_ALLERGEN') ORDER BY table_name,column_id",
+      "rows": [
+        {
+          "TABLE_NAME": "ALLERGEN",
+          "COLUMN_NAME": "ALLERGEN_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "ALLERGEN",
+          "COLUMN_NAME": "ALLERGEN_NAME",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 80,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CATEGORY",
+          "COLUMN_NAME": "CATEGORY_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CATEGORY",
+          "COLUMN_NAME": "CATEGORY_NAME",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 80,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "COLUMN_NAME": "RESTAURANT_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "COLUMN_NAME": "FOOD_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "COLUMN_NAME": "PRICE",
+          "DATA_TYPE": "NUMBER",
+          "DATA_LENGTH": 22,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CONTAINS",
+          "COLUMN_NAME": "PRICE_NOTE",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 250,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CUISINE",
+          "COLUMN_NAME": "CUISINE_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "CUISINE",
+          "COLUMN_NAME": "CUISINE_NAME",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 80,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "DIETARY_TYPE",
+          "COLUMN_NAME": "DIETARY_TYPE_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "DIETARY_TYPE",
+          "COLUMN_NAME": "TYPE_NAME",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 80,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "FOOD_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "FOOD_NAME",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 120,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "CATEGORY_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "CUISINE_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "DIETARY_TYPE_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "DESCRIPTION",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 1000,
+          "NULLABLE": "Y"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "IMAGE",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 180,
+          "NULLABLE": "Y"
+        },
+        {
+          "TABLE_NAME": "FOOD_ITEM",
+          "COLUMN_NAME": "CREATED_AT",
+          "DATA_TYPE": "TIMESTAMP(6)",
+          "DATA_LENGTH": 11,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "HAS_ALLERGEN",
+          "COLUMN_NAME": "FOOD_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "HAS_ALLERGEN",
+          "COLUMN_NAME": "ALLERGEN_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "RESTAURANT_ID",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 40,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "RESTAURANT_NAME",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 120,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "BLOCK",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 80,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "LANDMARK",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 180,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "MUST_HAVE",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 1000,
+          "NULLABLE": "N"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "IMAGE",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 180,
+          "NULLABLE": "Y"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "SOURCE_URL",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 500,
+          "NULLABLE": "Y"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "SOURCE_NOTE",
+          "DATA_TYPE": "VARCHAR2",
+          "DATA_LENGTH": 500,
+          "NULLABLE": "Y"
+        },
+        {
+          "TABLE_NAME": "RESTAURANT",
+          "COLUMN_NAME": "CREATED_AT",
+          "DATA_TYPE": "TIMESTAMP(6)",
+          "DATA_LENGTH": 11,
+          "NULLABLE": "N"
+        }
+      ]
+    },
+    {
+      "title": "INSERT category",
+      "sql": "INSERT INTO category(category_id,category_name) VALUES (:id,:name)",
+      "rows": [],
+      "rowsAffected": 1
+    },
+    {
+      "title": "COMMIT inserted record",
+      "sql": "COMMIT",
+      "rows": [
+        {
+          "committed": true
+        }
+      ]
+    },
+    {
+      "title": "Read committed insert",
+      "sql": "SELECT * FROM category WHERE category_id=:id",
+      "rows": [
+        {
+          "CATEGORY_ID": "CAPTURE_1793284320141",
+          "CATEGORY_NAME": "CAPTURE_1793284320141"
+        }
+      ]
+    },
+    {
+      "title": "SAVEPOINT",
+      "sql": "SAVEPOINT before_update",
+      "rows": [],
+      "rowsAffected": 0
+    },
+    {
+      "title": "UPDATE category",
+      "sql": "UPDATE category SET category_name=:name WHERE category_id=:id",
+      "rows": [],
+      "rowsAffected": 1
+    },
+    {
+      "title": "Read updated value",
+      "sql": "SELECT * FROM category WHERE category_id=:id",
+      "rows": [
+        {
+          "CATEGORY_ID": "CAPTURE_1793284320141",
+          "CATEGORY_NAME": "CAPTURE_1793284320141_UPDATED"
+        }
+      ]
+    },
+    {
+      "title": "ROLLBACK TO SAVEPOINT",
+      "sql": "ROLLBACK TO before_update",
+      "rows": [],
+      "rowsAffected": 0
+    },
+    {
+      "title": "Read restored value",
+      "sql": "SELECT * FROM category WHERE category_id=:id",
+      "rows": [
+        {
+          "CATEGORY_ID": "CAPTURE_1793284320141",
+          "CATEGORY_NAME": "CAPTURE_1793284320141"
+        }
+      ]
+    },
+    {
+      "title": "DELETE category",
+      "sql": "DELETE FROM category WHERE category_id=:id",
+      "rows": [],
+      "rowsAffected": 1
+    },
+    {
+      "title": "Read after DELETE",
+      "sql": "SELECT COUNT(*) AS record_count FROM category WHERE category_id=:id",
+      "rows": [
+        {
+          "RECORD_COUNT": 0
+        }
+      ]
+    },
+    {
+      "title": "ROLLBACK deletion",
+      "sql": "ROLLBACK",
+      "rows": [
+        {
+          "rolledBack": true
+        }
+      ]
+    },
+    {
+      "title": "Read restored row after ROLLBACK",
+      "sql": "SELECT * FROM category WHERE category_id=:id",
+      "rows": [
+        {
+          "CATEGORY_ID": "CAPTURE_1793284320141",
+          "CATEGORY_NAME": "CAPTURE_1793284320141"
+        }
+      ]
+    },
+    {
+      "title": "Final DELETE",
+      "sql": "DELETE FROM category WHERE category_id=:id",
+      "rows": [],
+      "rowsAffected": 1
+    },
+    {
+      "title": "Committed DELETE verified",
+      "sql": "SELECT COUNT(*) AS record_count FROM category WHERE category_id=:id",
+      "rows": [
+        {
+          "RECORD_COUNT": 0
+        }
+      ]
+    },
+    {
+      "title": "CREATE scratch table",
+      "sql": "CREATE TABLE veats_ddl_demo (demo_id NUMBER PRIMARY KEY, note VARCHAR2(40))",
+      "rows": [],
+      "rowsAffected": 0
+    },
+    {
+      "title": "ALTER scratch table",
+      "sql": "ALTER TABLE veats_ddl_demo ADD created_on DATE DEFAULT SYSDATE",
+      "rows": [],
+      "rowsAffected": 0
+    },
+    {
+      "title": "INSERT scratch row",
+      "sql": "INSERT INTO veats_ddl_demo(demo_id,note) VALUES (1,'DDL demonstration')",
+      "rows": [],
+      "rowsAffected": 1
+    },
+    {
+      "title": "SELECT scratch row",
+      "sql": "SELECT * FROM veats_ddl_demo",
+      "rows": [
+        {
+          "DEMO_ID": 1,
+          "NOTE": "DDL demonstration",
+          "CREATED_ON": "2026-10-29T09:02:00.000Z"
+        }
+      ]
+    },
+    {
+      "title": "TRUNCATE scratch table",
+      "sql": "TRUNCATE TABLE veats_ddl_demo",
+      "rows": [],
+      "rowsAffected": 0
+    },
+    {
+      "title": "Verify TRUNCATE",
+      "sql": "SELECT COUNT(*) AS record_count FROM veats_ddl_demo",
+      "rows": [
+        {
+          "RECORD_COUNT": 0
+        }
+      ]
+    },
+    {
+      "title": "DROP scratch table",
+      "sql": "DROP TABLE veats_ddl_demo PURGE",
+      "rows": [],
+      "rowsAffected": 0
+    }
+  ]
+}
