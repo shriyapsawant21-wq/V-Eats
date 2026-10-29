@@ -1,0 +1,2941 @@
+{
+  "members": [
+    {
+      "name": "Shriya",
+      "slug": "shriya",
+      "module": "Restaurants",
+      "tables": [
+        "RESTAURANT"
+      ],
+      "entityLines": [
+        2
+      ],
+      "schemaLines": "5 to 11",
+      "catalogLines": "5 and 9",
+      "reportLines": [
+        6,
+        11
+      ],
+      "ids": [
+        "SHRIYA_R"
+      ],
+      "introduction": "I manage restaurant identity and campus location. Restaurant is the parent of Contains. A restaurant can list many dishes, while a dish can be listed by many restaurants through Contains.",
+      "columns": "RESTAURANT_ID is the primary key. RESTAURANT_NAME is required and unique. BLOCK and LANDMARK store the location. MUST_HAVE is a JSON string list. Image, source and timestamp columns support the application.",
+      "prerequisites": "The seeded database must exist. This module creates only SHRIYA_R and does not need any other member to run first.",
+      "writes": [
+        {
+          "title": "Insert your demonstration restaurant",
+          "sql": "INSERT INTO restaurant\n (restaurant_id, restaurant_name, block, landmark, must_have)\nVALUES ('SHRIYA_R', 'Shriya Demo Canteen', 'GDN',\n 'Demo counter', '[\"Dosa\", \"Coffee\"]')",
+          "why": "Create one parent restaurant record. The dish names inside MUST_HAVE are text, not foreign keys.",
+          "expected": "1 row created.",
+          "file": "sql/members/shriya.sql",
+          "line": 27,
+          "endLine": 30
+        },
+        {
+          "title": "Commit the insert",
+          "sql": "COMMIT",
+          "why": "Make the insert visible to other database sessions.",
+          "expected": "Commit complete.",
+          "file": "sql/members/shriya.sql",
+          "line": 35,
+          "endLine": 35
+        },
+        {
+          "title": "Update its location",
+          "sql": "UPDATE restaurant\nSET landmark = 'Updated demo counter'\nWHERE restaurant_id = 'SHRIYA_R'",
+          "why": "The WHERE clause prevents an accidental update of every restaurant.",
+          "expected": "1 row updated.",
+          "file": "sql/members/shriya.sql",
+          "line": 40,
+          "endLine": 42
+        },
+        {
+          "title": "Commit the update",
+          "sql": "COMMIT",
+          "why": "Persist the new landmark.",
+          "expected": "Commit complete.",
+          "file": "sql/members/shriya.sql",
+          "line": 35,
+          "endLine": 35
+        }
+      ],
+      "selects": [
+        {
+          "title": "S1 Display and search your record",
+          "sql": "SELECT restaurant_id, restaurant_name, block, landmark\nFROM restaurant\nWHERE restaurant_id = 'SHRIYA_R'",
+          "why": "A primary-key search displays exactly the inserted record and updated landmark.",
+          "expected": "One row; landmark is Updated demo counter.",
+          "file": "sql/members/shriya.sql",
+          "line": 52,
+          "endLine": 54
+        },
+        {
+          "title": "S2 Summarize menus including empty restaurants",
+          "sql": "SELECT r.restaurant_name, COUNT(m.food_id) AS dishes,\n       ROUND(AVG(m.price), 2) AS avg_price\nFROM restaurant r\nLEFT JOIN contains m ON m.restaurant_id = r.restaurant_id\nGROUP BY r.restaurant_id, r.restaurant_name\nORDER BY r.restaurant_name",
+          "why": "LEFT JOIN retains restaurants with no menu. COUNT(column) ignores the NULL child row; AVG is NULL for an empty menu.",
+          "expected": "Your demo restaurant has 0 dishes and NULL average; seeded outlets have menus.",
+          "file": "sql/members/shriya.sql",
+          "line": 59,
+          "endLine": 64
+        },
+        {
+          "title": "S3 Find outlets below the overall menu average",
+          "sql": "SELECT r.restaurant_name\nFROM restaurant r\nWHERE EXISTS (\n SELECT 1 FROM contains m\n WHERE m.restaurant_id = r.restaurant_id\n AND m.price < (SELECT AVG(price) FROM contains)\n)\nORDER BY r.restaurant_name",
+          "why": "A correlated EXISTS tests each restaurant. The nested AVG subquery supplies a database-wide comparison.",
+          "expected": "Only restaurants with at least one below-average offer appear.",
+          "file": "sql/members/shriya.sql",
+          "line": 69,
+          "endLine": 76
+        },
+        {
+          "title": "S4 Format the directory using SQL functions",
+          "sql": "SELECT UPPER(restaurant_name) AS outlet,\n       SUBSTR(landmark, 1, 28) AS location,\n       LENGTH(restaurant_name) AS name_length\nFROM restaurant\nORDER BY restaurant_name",
+          "why": "UPPER changes display case, SUBSTR shortens a value, and LENGTH counts its characters. Stored names are unchanged.",
+          "expected": "All restaurants appear with uppercase display names and character counts.",
+          "file": "sql/members/shriya.sql",
+          "line": 81,
+          "endLine": 85
+        },
+        {
+          "title": "S5 Find restaurants serving both Indian and vegetarian food",
+          "sql": "SELECT r.restaurant_name\nFROM restaurant r\nWHERE r.restaurant_id IN (\n SELECT m.restaurant_id FROM contains m\n JOIN food_item f ON f.food_id = m.food_id\n WHERE f.cuisine_id = 'Indian'\n INTERSECT\n SELECT m.restaurant_id FROM contains m\n JOIN food_item f ON f.food_id = m.food_id\n WHERE f.dietary_type_id = 'Vegetarian'\n)\nORDER BY r.restaurant_name",
+          "why": "INTERSECT returns restaurant IDs present in both sets. The two qualifying dishes can be different dishes.",
+          "expected": "Outlets must satisfy both set conditions; an empty restaurant does not qualify.",
+          "file": "sql/members/shriya.sql",
+          "line": 90,
+          "endLine": 101
+        }
+      ],
+      "deletes": [
+        {
+          "title": "Delete only your restaurant",
+          "sql": "DELETE FROM restaurant WHERE restaurant_id = 'SHRIYA_R'",
+          "why": "No menu references this independent demonstration record, so its deletion is allowed.",
+          "expected": "1 row deleted.",
+          "file": "sql/members/shriya.sql",
+          "line": 106,
+          "endLine": 106
+        },
+        {
+          "title": "Commit the deletion",
+          "sql": "COMMIT",
+          "why": "Make cleanup permanent.",
+          "expected": "Commit complete.",
+          "file": "sql/members/shriya.sql",
+          "line": 35,
+          "endLine": 35
+        },
+        {
+          "title": "Verify cleanup",
+          "sql": "SELECT COUNT(*) AS remaining FROM restaurant\nWHERE restaurant_id = 'SHRIYA_R'",
+          "why": "Count the specific ID, not the entire table.",
+          "expected": "REMAINING = 0.",
+          "file": "sql/members/shriya.sql",
+          "line": 116,
+          "endLine": 117
+        }
+      ],
+      "viva": [
+        [
+          "Why not store price in Restaurant?",
+          "Price belongs to a restaurant–food pair, so it is in Contains."
+        ],
+        [
+          "Why LEFT JOIN in S2?",
+          "It retains a restaurant even when it currently has no menu rows."
+        ],
+        [
+          "Is MUST_HAVE normalized into another table?",
+          "No. It is a JSON string list on Restaurant, matching the supplied table list storage choice."
+        ],
+        [
+          "Why can deleting a seeded restaurant fail?",
+          "Contains rows reference it through a foreign key; child rows must be deleted first."
+        ]
+      ],
+      "reportExplanation": "Restaurant statistics in lib/reports.ts are existing application examples. Your five independent rehearsal SELECTs are in sql/members/shriya.sql.",
+      "schemaRefs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "6 to 12",
+          "what": "RESTAURANT columns and database constraints"
+        }
+      ],
+      "refs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "6 to 12",
+          "what": "RESTAURANT columns and database constraints"
+        },
+        {
+          "file": "lib/entities.ts",
+          "lines": "2",
+          "what": "Your table field allowlist and primary-key identifiers"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "1 and 5",
+          "what": "Driver import and pool creation using server-side environment variables"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "9",
+          "what": "Read-query execution with bind parameters; finally closes the connection"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "22 to 28",
+          "what": "Shared search and display SELECT construction"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "60",
+          "what": "Shared INSERT builder with bind placeholders"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "69",
+          "what": "Shared UPDATE builder; primary keys stay fixed"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "68",
+          "what": "Shared DELETE builder constrained by primary-key fields"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "71 to 74",
+          "what": "Execute actual SQL; commit success; rollback failure; close connection"
+        },
+        {
+          "file": "lib/db.ts",
+          "lines": "5 and 9",
+          "what": "Read your module into the discovery catalog"
+        },
+        {
+          "file": "sql/members/shriya.sql",
+          "lines": "See statement references on your query pages",
+          "what": "Your command-line demonstration worksheet; not a separate JDBC implementation"
+        },
+        {
+          "file": "lib/reports.ts",
+          "lines": "6, 11",
+          "what": "Related existing application report queries; independent of your new worksheet"
+        }
+      ]
+    },
+    {
+      "name": "Trisha",
+      "slug": "trisha",
+      "module": "Food items",
+      "tables": [
+        "FOOD_ITEM"
+      ],
+      "entityLines": [
+        3
+      ],
+      "schemaLines": "12 to 20",
+      "catalogLines": "5 and 10",
+      "reportLines": [
+        5,
+        10
+      ],
+      "ids": [
+        "TRISHA_F"
+      ],
+      "introduction": "I manage dish identity and classification. Food_Item references one category, one cuisine and one dietary type. Restaurant prices and allergen links are separate relationships.",
+      "columns": "FOOD_ID is the primary key. FOOD_NAME is required. CATEGORY_ID, CUISINE_ID and DIETARY_TYPE_ID are required foreign keys. DESCRIPTION and IMAGE are optional application fields.",
+      "prerequisites": "Existing seeded lookup IDs Meals, Indian and Vegetarian are required. The script creates only TRISHA_F; it does not depend on another member.",
+      "writes": [
+        {
+          "title": "Insert your dish",
+          "sql": "INSERT INTO food_item\n (food_id, food_name, category_id, cuisine_id,\n  dietary_type_id, description)\nVALUES ('TRISHA_F', 'Trisha Demo Rice', 'Meals', 'Indian',\n 'Vegetarian', 'Dish for the database demonstration')",
+          "why": "All three classification IDs must already exist. Do not invent an unseeded lookup ID.",
+          "expected": "1 row created.",
+          "file": "sql/members/trisha.sql",
+          "line": 27,
+          "endLine": 31
+        },
+        {
+          "title": "Commit the insert",
+          "sql": "COMMIT",
+          "why": "Persist the dish.",
+          "expected": "Commit complete.",
+          "file": "sql/members/trisha.sql",
+          "line": 36,
+          "endLine": 36
+        },
+        {
+          "title": "Update its description",
+          "sql": "UPDATE food_item\nSET description = 'Updated vegetarian rice description'\nWHERE food_id = 'TRISHA_F'",
+          "why": "Change a non-key field while retaining the identity and valid references.",
+          "expected": "1 row updated.",
+          "file": "sql/members/trisha.sql",
+          "line": 41,
+          "endLine": 43
+        },
+        {
+          "title": "Commit the update",
+          "sql": "COMMIT",
+          "why": "Persist the edit.",
+          "expected": "Commit complete.",
+          "file": "sql/members/trisha.sql",
+          "line": 36,
+          "endLine": 36
+        }
+      ],
+      "selects": [
+        {
+          "title": "S1 Search your dish and verify the update",
+          "sql": "SELECT food_id, food_name, description\nFROM food_item\nWHERE food_id = 'TRISHA_F'",
+          "why": "A simple SELECT verifies the insert and updated description.",
+          "expected": "One row with Updated vegetarian rice description.",
+          "file": "sql/members/trisha.sql",
+          "line": 53,
+          "endLine": 55
+        },
+        {
+          "title": "S2 Display classification names with four tables",
+          "sql": "SELECT f.food_name, c.category_name, u.cuisine_name,\n       d.type_name\nFROM food_item f\nJOIN category c ON c.category_id = f.category_id\nJOIN cuisine u ON u.cuisine_id = f.cuisine_id\nJOIN dietary_type d ON d.dietary_type_id = f.dietary_type_id\nORDER BY f.food_name",
+          "why": "Joins follow the three foreign keys rather than duplicating lookup names in Food_Item.",
+          "expected": "Your dish appears as Meals, Indian, Vegetarian.",
+          "file": "sql/members/trisha.sql",
+          "line": 60,
+          "endLine": 66
+        },
+        {
+          "title": "S3 Find dishes with an affordable offer",
+          "sql": "SELECT f.food_name\nFROM food_item f\nWHERE EXISTS (\n SELECT 1 FROM contains m\n WHERE m.food_id = f.food_id AND m.price < 100\n)\nORDER BY f.food_name",
+          "why": "Correlated EXISTS returns a dish once even if several restaurants offer it below 100.",
+          "expected": "Only dishes with a listed price below 100 qualify; your unlisted demo dish does not.",
+          "file": "sql/members/trisha.sql",
+          "line": 71,
+          "endLine": 77
+        },
+        {
+          "title": "S4 Count dishes by category and diet",
+          "sql": "SELECT category_id, dietary_type_id, COUNT(*) AS dishes\nFROM food_item\nGROUP BY category_id, dietary_type_id\nHAVING COUNT(*) >= 2\nORDER BY category_id, dietary_type_id",
+          "why": "GROUP BY forms category/diet groups; HAVING filters aggregate counts after grouping.",
+          "expected": "Only groups containing at least two dishes appear.",
+          "file": "sql/members/trisha.sql",
+          "line": 82,
+          "endLine": 86
+        },
+        {
+          "title": "S5 Find food without a menu using MINUS",
+          "sql": "SELECT food_id, food_name FROM food_item\nMINUS\nSELECT f.food_id, f.food_name\nFROM food_item f JOIN contains m ON m.food_id = f.food_id\nORDER BY food_name",
+          "why": "MINUS removes listed dishes from all dishes. This also explains why merely inserting Food_Item does not make it discoverable in a restaurant menu.",
+          "expected": "TRISHA_F appears because it has no Contains row.",
+          "file": "sql/members/trisha.sql",
+          "line": 91,
+          "endLine": 95
+        }
+      ],
+      "deletes": [
+        {
+          "title": "Delete only your unlisted dish",
+          "sql": "DELETE FROM food_item WHERE food_id = 'TRISHA_F'",
+          "why": "Your record has no menu/allergen children. Do not delete seed dishes.",
+          "expected": "1 row deleted.",
+          "file": "sql/members/trisha.sql",
+          "line": 100,
+          "endLine": 100
+        },
+        {
+          "title": "Commit the deletion",
+          "sql": "COMMIT",
+          "why": "Persist cleanup.",
+          "expected": "Commit complete.",
+          "file": "sql/members/trisha.sql",
+          "line": 36,
+          "endLine": 36
+        },
+        {
+          "title": "Verify cleanup",
+          "sql": "SELECT COUNT(*) AS remaining FROM food_item\nWHERE food_id = 'TRISHA_F'",
+          "why": "Verify your ID is gone.",
+          "expected": "REMAINING = 0.",
+          "file": "sql/members/trisha.sql",
+          "line": 110,
+          "endLine": 111
+        }
+      ],
+      "viva": [
+        [
+          "Why can a foreign-key value not be invented?",
+          "Oracle requires the referenced lookup record to exist."
+        ],
+        [
+          "Why is my new dish absent from the homepage?",
+          "Discovery shows restaurant offers; add a Contains relationship to list it at an outlet."
+        ],
+        [
+          "WHERE versus HAVING?",
+          "WHERE filters individual rows before grouping; HAVING filters aggregate groups."
+        ],
+        [
+          "Why no ALLERGEN_ID on Food_Item?",
+          "The ER diagram allows many allergens, represented by Has_Allergen."
+        ]
+      ],
+      "reportExplanation": "Food search is in app/api/foods/route.ts. Existing nested food examples are in lib/reports.ts. Your five demonstration SELECTs are in sql/members/trisha.sql.",
+      "schemaRefs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "13 to 20",
+          "what": "FOOD_ITEM columns and database constraints"
+        }
+      ],
+      "refs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "13 to 20",
+          "what": "FOOD_ITEM columns and database constraints"
+        },
+        {
+          "file": "lib/entities.ts",
+          "lines": "3",
+          "what": "Your table field allowlist and primary-key identifiers"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "1 and 5",
+          "what": "Driver import and pool creation using server-side environment variables"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "9",
+          "what": "Read-query execution with bind parameters; finally closes the connection"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "22 to 28",
+          "what": "Shared search and display SELECT construction"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "60",
+          "what": "Shared INSERT builder with bind placeholders"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "69",
+          "what": "Shared UPDATE builder; primary keys stay fixed"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "68",
+          "what": "Shared DELETE builder constrained by primary-key fields"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "71 to 74",
+          "what": "Execute actual SQL; commit success; rollback failure; close connection"
+        },
+        {
+          "file": "lib/db.ts",
+          "lines": "5 and 10",
+          "what": "Read your module into the discovery catalog"
+        },
+        {
+          "file": "sql/members/trisha.sql",
+          "lines": "See statement references on your query pages",
+          "what": "Your command-line demonstration worksheet; not a separate JDBC implementation"
+        },
+        {
+          "file": "lib/reports.ts",
+          "lines": "5, 10",
+          "what": "Related existing application report queries; independent of your new worksheet"
+        }
+      ]
+    },
+    {
+      "name": "Tanisi",
+      "slug": "tanisi",
+      "module": "Categories cuisines and dietary types",
+      "tables": [
+        "CATEGORY",
+        "CUISINE",
+        "DIETARY_TYPE"
+      ],
+      "entityLines": [
+        6,
+        7,
+        8
+      ],
+      "schemaLines": "2 to 4 and 14 to 16",
+      "catalogLines": "7 to 8 and 13",
+      "reportLines": [
+        9,
+        10
+      ],
+      "ids": [
+        "TANISI_C",
+        "TANISI_U",
+        "TANISI_D"
+      ],
+      "introduction": "I manage the three classification lookup tables. Each lookup record can classify many food items, and every food item must reference one valid category, cuisine and dietary type.",
+      "columns": "CATEGORY has CATEGORY_ID and CATEGORY_NAME. CUISINE has CUISINE_ID and CUISINE_NAME. DIETARY_TYPE has DIETARY_TYPE_ID and TYPE_NAME. Each ID is a primary key and each name is required and unique.",
+      "prerequisites": "This module uses existing Food_Item rows for SELECTs but creates its own three unused lookup records. No member must run before you.",
+      "writes": [
+        {
+          "title": "Insert one record into each owned table",
+          "sql": "INSERT INTO category VALUES ('TANISI_C', 'Tanisi Demo Category');\nINSERT INTO cuisine VALUES ('TANISI_U', 'Tanisi Demo Cuisine');\nINSERT INTO dietary_type VALUES ('TANISI_D', 'Tanisi Demo Diet')",
+          "why": "These are three INSERT statements. They intentionally have no child food rows, so cleanup can be done independently.",
+          "expected": "Three separate 1 row created messages.",
+          "file": "sql/members/tanisi.sql",
+          "line": 27,
+          "endLine": 29
+        },
+        {
+          "title": "Commit the inserts",
+          "sql": "COMMIT",
+          "why": "Persist all three in one transaction.",
+          "expected": "Commit complete.",
+          "file": "sql/members/tanisi.sql",
+          "line": 34,
+          "endLine": 34
+        },
+        {
+          "title": "Update all three lookup names",
+          "sql": "UPDATE category SET category_name = 'Tanisi Category Updated'\nWHERE category_id = 'TANISI_C';\nUPDATE cuisine SET cuisine_name = 'Tanisi Cuisine Updated'\nWHERE cuisine_id = 'TANISI_U';\nUPDATE dietary_type SET type_name = 'Tanisi Diet Updated'\nWHERE dietary_type_id = 'TANISI_D'",
+          "why": "IDs remain stable while display names change. The API maps IDs to the current display names.",
+          "expected": "Three separate 1 row updated messages.",
+          "file": "sql/members/tanisi.sql",
+          "line": 39,
+          "endLine": 44
+        },
+        {
+          "title": "Commit the updates",
+          "sql": "COMMIT",
+          "why": "Persist the three edits.",
+          "expected": "Commit complete.",
+          "file": "sql/members/tanisi.sql",
+          "line": 34,
+          "endLine": 34
+        }
+      ],
+      "selects": [
+        {
+          "title": "S1 Verify all three updates using UNION ALL",
+          "sql": "SELECT 'Category' AS kind, category_id AS id,\n       category_name AS name FROM category\nWHERE category_id = 'TANISI_C'\nUNION ALL\nSELECT 'Cuisine', cuisine_id, cuisine_name FROM cuisine\nWHERE cuisine_id = 'TANISI_U'\nUNION ALL\nSELECT 'Diet', dietary_type_id, type_name FROM dietary_type\nWHERE dietary_type_id = 'TANISI_D'",
+          "why": "UNION ALL combines compatible columns without removing duplicates. Labels identify the source entity.",
+          "expected": "Three rows with the Updated names.",
+          "file": "sql/members/tanisi.sql",
+          "line": 54,
+          "endLine": 62
+        },
+        {
+          "title": "S2 Count food in every category",
+          "sql": "SELECT c.category_name, COUNT(f.food_id) AS dishes\nFROM category c LEFT JOIN food_item f\n ON f.category_id = c.category_id\nGROUP BY c.category_id, c.category_name\nORDER BY dishes DESC, c.category_name",
+          "why": "LEFT JOIN includes unused categories; COUNT(f.food_id) makes the empty category count zero.",
+          "expected": "Tanisi Category Updated has 0 dishes.",
+          "file": "sql/members/tanisi.sql",
+          "line": 67,
+          "endLine": 71
+        },
+        {
+          "title": "S3 Find cuisines with more than one dish",
+          "sql": "SELECT c.cuisine_name, COUNT(f.food_id) AS dishes\nFROM cuisine c JOIN food_item f\n ON f.cuisine_id = c.cuisine_id\nGROUP BY c.cuisine_id, c.cuisine_name\nHAVING COUNT(f.food_id) > 1\nORDER BY dishes DESC",
+          "why": "An aggregate join with HAVING identifies commonly used cuisines.",
+          "expected": "Only cuisines associated with at least two dishes appear.",
+          "file": "sql/members/tanisi.sql",
+          "line": 76,
+          "endLine": 81
+        },
+        {
+          "title": "S4 Find unused dietary types",
+          "sql": "SELECT d.type_name\nFROM dietary_type d\nWHERE NOT EXISTS (\n SELECT 1 FROM food_item f\n WHERE f.dietary_type_id = d.dietary_type_id\n)\nORDER BY d.type_name",
+          "why": "A correlated NOT EXISTS implements an anti-join: select parents with no children.",
+          "expected": "Tanisi Diet Updated appears; other unused types may also appear.",
+          "file": "sql/members/tanisi.sql",
+          "line": 86,
+          "endLine": 92
+        },
+        {
+          "title": "S5 Find Indian meals with INTERSECT",
+          "sql": "SELECT food_name FROM food_item WHERE cuisine_id = 'Indian'\nINTERSECT\nSELECT food_name FROM food_item WHERE category_id = 'Meals'\nORDER BY food_name",
+          "why": "The result belongs to both sets. INTERSECT removes duplicates and requires compatible selected column types.",
+          "expected": "Only dish names that are both Indian and Meals appear.",
+          "file": "sql/members/tanisi.sql",
+          "line": 97,
+          "endLine": 100
+        }
+      ],
+      "deletes": [
+        {
+          "title": "Delete only your three unused lookups",
+          "sql": "DELETE FROM category WHERE category_id = 'TANISI_C';\nDELETE FROM cuisine WHERE cuisine_id = 'TANISI_U';\nDELETE FROM dietary_type WHERE dietary_type_id = 'TANISI_D'",
+          "why": "No food references these temporary IDs. Deleting a referenced real lookup would be rejected.",
+          "expected": "Three separate 1 row deleted messages.",
+          "file": "sql/members/tanisi.sql",
+          "line": 105,
+          "endLine": 107
+        },
+        {
+          "title": "Commit cleanup",
+          "sql": "COMMIT",
+          "why": "Persist all three deletions.",
+          "expected": "Commit complete.",
+          "file": "sql/members/tanisi.sql",
+          "line": 34,
+          "endLine": 34
+        },
+        {
+          "title": "Verify cleanup",
+          "sql": "SELECT\n (SELECT COUNT(*) FROM category WHERE category_id='TANISI_C')\n + (SELECT COUNT(*) FROM cuisine WHERE cuisine_id='TANISI_U')\n + (SELECT COUNT(*) FROM dietary_type\n    WHERE dietary_type_id='TANISI_D') AS remaining\nFROM dual",
+          "why": "Scalar subqueries add remaining counts; DUAL supplies one result row.",
+          "expected": "REMAINING = 0.",
+          "file": "sql/members/tanisi.sql",
+          "line": 117,
+          "endLine": 122
+        }
+      ],
+      "viva": [
+        [
+          "Why separate lookup tables?",
+          "They centralize classification names and allow foreign-key integrity instead of inconsistent repeated text."
+        ],
+        [
+          "Is All food a category record?",
+          "No. It is a frontend filter option only."
+        ],
+        [
+          "Can I delete Meals while food references it?",
+          "No. The restrictive FK prevents deletion until child references are changed or removed."
+        ],
+        [
+          "UNION ALL versus INTERSECT?",
+          "UNION ALL concatenates results; INTERSECT returns values common to both sets."
+        ]
+      ],
+      "reportExplanation": "The three table definitions are at the start of sql/01-schema.sql. Your module has three entity entries but shares the same generic CRUD handler. Demonstration SQL is sql/members/tanisi.sql.",
+      "schemaRefs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "2",
+          "what": "CATEGORY columns and database constraints"
+        },
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "3",
+          "what": "CUISINE columns and database constraints"
+        },
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "4",
+          "what": "DIETARY_TYPE columns and database constraints"
+        }
+      ],
+      "refs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "2",
+          "what": "CATEGORY columns and database constraints"
+        },
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "3",
+          "what": "CUISINE columns and database constraints"
+        },
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "4",
+          "what": "DIETARY_TYPE columns and database constraints"
+        },
+        {
+          "file": "lib/entities.ts",
+          "lines": "6, 7, 8",
+          "what": "Your table field allowlist and primary-key identifiers"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "1 and 5",
+          "what": "Driver import and pool creation using server-side environment variables"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "9",
+          "what": "Read-query execution with bind parameters; finally closes the connection"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "22 to 28",
+          "what": "Shared search and display SELECT construction"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "60",
+          "what": "Shared INSERT builder with bind placeholders"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "69",
+          "what": "Shared UPDATE builder; primary keys stay fixed"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "68",
+          "what": "Shared DELETE builder constrained by primary-key fields"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "71 to 74",
+          "what": "Execute actual SQL; commit success; rollback failure; close connection"
+        },
+        {
+          "file": "lib/db.ts",
+          "lines": "7 to 8 and 13",
+          "what": "Read your module into the discovery catalog"
+        },
+        {
+          "file": "sql/members/tanisi.sql",
+          "lines": "See statement references on your query pages",
+          "what": "Your command-line demonstration worksheet; not a separate JDBC implementation"
+        },
+        {
+          "file": "lib/reports.ts",
+          "lines": "10, 11",
+          "what": "Related existing application report queries; independent of your new worksheet"
+        }
+      ]
+    },
+    {
+      "name": "Asmi",
+      "slug": "asmi",
+      "module": "Allergens and food allergen links",
+      "tables": [
+        "ALLERGEN",
+        "HAS_ALLERGEN"
+      ],
+      "entityLines": [
+        5,
+        9
+      ],
+      "schemaLines": "5 and 28 to 32",
+      "catalogLines": "6, 8 and 12 to 13",
+      "reportLines": [
+        5,
+        7
+      ],
+      "ids": [
+        "ASMI_A"
+      ],
+      "introduction": "I manage allergen definitions and the many-to-many food–allergen relationship. Has_Allergen stores one pair per link, allowing each food to have multiple allergens and each allergen to appear in multiple foods.",
+      "columns": "ALLERGEN_ID is the Allergen primary key. ALLERGEN_NAME is required and unique. Has_Allergen has composite primary key (FOOD_ID, ALLERGEN_ID); both columns also reference parent tables.",
+      "prerequisites": "Seed dishes f7 and f9 must exist. ASMI_A is your own temporary allergen, so none of your statements edits the seeded allergen links.",
+      "writes": [
+        {
+          "title": "Insert a parent allergen and its link",
+          "sql": "INSERT INTO allergen VALUES ('ASMI_A', 'Asmi Demo Allergen');\nINSERT INTO has_allergen(food_id, allergen_id)\nVALUES ('f7', 'ASMI_A')",
+          "why": "Insert the parent before the relationship because of the FK. Linking f7 to a demo allergen is a demonstration, not a real allergy claim.",
+          "expected": "Two separate 1 row created messages.",
+          "file": "sql/members/asmi.sql",
+          "line": 27,
+          "endLine": 29
+        },
+        {
+          "title": "Commit the inserts",
+          "sql": "COMMIT",
+          "why": "Make both parent and relationship visible.",
+          "expected": "Commit complete.",
+          "file": "sql/members/asmi.sql",
+          "line": 34,
+          "endLine": 34
+        },
+        {
+          "title": "Update the name and relationship",
+          "sql": "UPDATE allergen SET allergen_name = 'Asmi Allergen Updated'\nWHERE allergen_id = 'ASMI_A';\nUPDATE has_allergen SET food_id = 'f9'\nWHERE food_id = 'f7' AND allergen_id = 'ASMI_A'",
+          "why": "The master name changes; the link moves from f7 to f9. Both columns identify the original relationship in the WHERE clause.",
+          "expected": "Two separate 1 row updated messages.",
+          "file": "sql/members/asmi.sql",
+          "line": 39,
+          "endLine": 42
+        },
+        {
+          "title": "Commit the updates",
+          "sql": "COMMIT",
+          "why": "Persist both edits.",
+          "expected": "Commit complete.",
+          "file": "sql/members/asmi.sql",
+          "line": 34,
+          "endLine": 34
+        }
+      ],
+      "selects": [
+        {
+          "title": "S1 Display the updated relationship",
+          "sql": "SELECT f.food_name, a.allergen_name\nFROM has_allergen h\nJOIN food_item f ON f.food_id = h.food_id\nJOIN allergen a ON a.allergen_id = h.allergen_id\nWHERE h.allergen_id = 'ASMI_A'",
+          "why": "A three-table join follows both FKs. It verifies the updated master name and changed food ID.",
+          "expected": "Idli Sambar linked to Asmi Allergen Updated.",
+          "file": "sql/members/asmi.sql",
+          "line": 52,
+          "endLine": 56
+        },
+        {
+          "title": "S2 List allergen names for every food",
+          "sql": "SELECT f.food_name,\n NVL(LISTAGG(a.allergen_name, ', ')\n WITHIN GROUP (ORDER BY a.allergen_name), 'None listed')\n AS listed_allergens\nFROM food_item f\nLEFT JOIN has_allergen h ON h.food_id = f.food_id\nLEFT JOIN allergen a ON a.allergen_id = h.allergen_id\nGROUP BY f.food_id, f.food_name\nORDER BY f.food_name",
+          "why": "LEFT JOIN retains foods without links. LISTAGG combines names, and NVL provides a display value when the aggregate is NULL.",
+          "expected": "All food appears; your temporary label is included for Idli Sambar.",
+          "file": "sql/members/asmi.sql",
+          "line": 61,
+          "endLine": 69
+        },
+        {
+          "title": "S3 Find vegetarian food without listed milk",
+          "sql": "SELECT f.food_name\nFROM food_item f\nWHERE f.dietary_type_id IN ('Vegetarian', 'Vegan')\nAND NOT EXISTS (\n SELECT 1 FROM has_allergen h\n WHERE h.food_id = f.food_id AND h.allergen_id = 'Milk'\n)\nORDER BY f.food_name",
+          "why": "The correlated anti-join excludes foods with a Milk link. Absence of a sample link does not certify medical safety.",
+          "expected": "Only vegetarian/vegan foods with no listed Milk relationship appear.",
+          "file": "sql/members/asmi.sql",
+          "line": 74,
+          "endLine": 81
+        },
+        {
+          "title": "S4 Find foods with several listed allergens",
+          "sql": "SELECT f.food_name, COUNT(*) AS allergen_count\nFROM food_item f JOIN has_allergen h ON h.food_id=f.food_id\nGROUP BY f.food_id, f.food_name\nHAVING COUNT(*) >= 2\nORDER BY allergen_count DESC, f.food_name",
+          "why": "GROUP BY counts links per food, and HAVING keeps foods with two or more.",
+          "expected": "Examples include pizza, brownie and chicken noodles in the seed data.",
+          "file": "sql/members/asmi.sql",
+          "line": 86,
+          "endLine": 90
+        },
+        {
+          "title": "S5 Find foods sharing allergens with pizza",
+          "sql": "SELECT f.food_name\nFROM food_item f\nWHERE f.food_id <> 'f2'\nAND EXISTS (\n SELECT 1 FROM has_allergen h\n WHERE h.food_id = f.food_id\n AND h.allergen_id IN (\n  SELECT allergen_id FROM has_allergen WHERE food_id='f2'\n )\n)\nORDER BY f.food_name",
+          "why": "An IN subquery gets pizza allergens; correlated EXISTS finds other foods sharing any of them, without duplicate outer rows.",
+          "expected": "Other foods sharing Milk or Gluten with f2 appear; pizza itself is excluded.",
+          "file": "sql/members/asmi.sql",
+          "line": 95,
+          "endLine": 105
+        }
+      ],
+      "deletes": [
+        {
+          "title": "Delete the link before its parent",
+          "sql": "DELETE FROM has_allergen\nWHERE food_id = 'f9' AND allergen_id = 'ASMI_A';\nDELETE FROM allergen WHERE allergen_id = 'ASMI_A'",
+          "why": "The child relationship must be removed before the referenced master row.",
+          "expected": "Two separate 1 row deleted messages.",
+          "file": "sql/members/asmi.sql",
+          "line": 110,
+          "endLine": 112
+        },
+        {
+          "title": "Commit cleanup",
+          "sql": "COMMIT",
+          "why": "Persist removal of both demonstration records.",
+          "expected": "Commit complete.",
+          "file": "sql/members/asmi.sql",
+          "line": 34,
+          "endLine": 34
+        },
+        {
+          "title": "Verify cleanup",
+          "sql": "SELECT COUNT(*) AS remaining FROM allergen\nWHERE allergen_id = 'ASMI_A'",
+          "why": "The restrictive FK ensures no links can survive after successful parent deletion.",
+          "expected": "REMAINING = 0.",
+          "file": "sql/members/asmi.sql",
+          "line": 122,
+          "endLine": 123
+        }
+      ],
+      "viva": [
+        [
+          "Why a composite primary key?",
+          "The food–allergen pair must be unique, while either ID alone may repeat."
+        ],
+        [
+          "Why delete the link first?",
+          "It references the allergen parent; Oracle prevents an orphaned relationship."
+        ],
+        [
+          "Why LISTAGG rather than another table?",
+          "LISTAGG changes the query output format, not the normalized storage."
+        ],
+        [
+          "Is no Milk link a verified allergy guarantee?",
+          "No. The project uses sample labels; real ingredients and cross-contact must be confirmed."
+        ]
+      ],
+      "reportExplanation": "The relationship-specific PUT is in app/api/manage/route.ts. The application stores and updates both key columns using an original-key WHERE clause. Demonstration SQL is sql/members/asmi.sql.",
+      "schemaRefs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "5",
+          "what": "ALLERGEN columns and database constraints"
+        },
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "28 to 32",
+          "what": "HAS_ALLERGEN columns and database constraints"
+        }
+      ],
+      "refs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "5",
+          "what": "ALLERGEN columns and database constraints"
+        },
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "28 to 32",
+          "what": "HAS_ALLERGEN columns and database constraints"
+        },
+        {
+          "file": "lib/entities.ts",
+          "lines": "5, 9",
+          "what": "Your table field allowlist and primary-key identifiers"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "1 and 5",
+          "what": "Driver import and pool creation using server-side environment variables"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "9",
+          "what": "Read-query execution with bind parameters; finally closes the connection"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "22 to 28",
+          "what": "Shared search and display SELECT construction"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "60",
+          "what": "Shared INSERT builder with bind placeholders"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "65",
+          "what": "Relationship UPDATE uses the old composite key"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "68",
+          "what": "Shared DELETE builder constrained by primary-key fields"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "71 to 74",
+          "what": "Execute actual SQL; commit success; rollback failure; close connection"
+        },
+        {
+          "file": "lib/db.ts",
+          "lines": "6, 8 and 12 to 13",
+          "what": "Read your module into the discovery catalog"
+        },
+        {
+          "file": "sql/members/asmi.sql",
+          "lines": "See statement references on your query pages",
+          "what": "Your command-line demonstration worksheet; not a separate JDBC implementation"
+        },
+        {
+          "file": "lib/reports.ts",
+          "lines": "7, 5",
+          "what": "Related existing application report queries; independent of your new worksheet"
+        }
+      ]
+    },
+    {
+      "name": "Soha",
+      "slug": "soha",
+      "module": "Menu prices and transactions",
+      "tables": [
+        "CONTAINS"
+      ],
+      "entityLines": [
+        4
+      ],
+      "schemaLines": "21 to 27",
+      "catalogLines": "6 and 11",
+      "reportLines": [
+        3,
+        4,
+        6,
+        8
+      ],
+      "ids": [
+        "SOHA_R"
+      ],
+      "introduction": "I manage Contains, the many-to-many restaurant–food relationship. A price belongs to one restaurant and food pair. I also demonstrate transaction control and the isolated DDL example.",
+      "columns": "Contains has composite primary key (RESTAURANT_ID, FOOD_ID), two parent FKs and a required positive price no greater than 100000. PRICE_NOTE records provenance. The same food can have different prices at different restaurants.",
+      "prerequisites": "Seed dish f7 must exist. A private SOHA_R restaurant fixture is created below only to isolate your menu demonstration; it does not depend on Shriya.",
+      "writes": [
+        {
+          "title": "Create your independent parent fixture",
+          "sql": "INSERT INTO restaurant\n (restaurant_id, restaurant_name, block, landmark, must_have)\nVALUES ('SOHA_R', 'Soha Demo Counter', 'TT', 'Demo counter', '[]')",
+          "why": "This fixture supplies your restaurant FK; its temporary identity prevents modifying seed offers.",
+          "expected": "1 row created.",
+          "file": "sql/members/soha.sql",
+          "line": 27,
+          "endLine": 29
+        },
+        {
+          "title": "Insert your menu price",
+          "sql": "INSERT INTO contains(restaurant_id, food_id, price, price_note)\nVALUES ('SOHA_R', 'f7', 90, 'Soha demonstration only')",
+          "why": "Both parent IDs exist. The pair is unique.",
+          "expected": "1 row created.",
+          "file": "sql/members/soha.sql",
+          "line": 34,
+          "endLine": 35
+        },
+        {
+          "title": "Commit the inserts",
+          "sql": "COMMIT",
+          "why": "Persist parent and menu so a separate session can read them.",
+          "expected": "Commit complete.",
+          "file": "sql/members/soha.sql",
+          "line": 40,
+          "endLine": 40
+        },
+        {
+          "title": "Update your pair only",
+          "sql": "UPDATE contains SET price = 95\nWHERE restaurant_id = 'SOHA_R' AND food_id = 'f7'",
+          "why": "Both PK columns constrain the update to one restaurant–food offer.",
+          "expected": "1 row updated.",
+          "file": "sql/members/soha.sql",
+          "line": 45,
+          "endLine": 46
+        },
+        {
+          "title": "Commit the price change",
+          "sql": "COMMIT",
+          "why": "Persist 95 as the current demonstration price.",
+          "expected": "Commit complete.",
+          "file": "sql/members/soha.sql",
+          "line": 40,
+          "endLine": 40
+        }
+      ],
+      "selects": [
+        {
+          "title": "S1 Verify the new price through joins",
+          "sql": "SELECT r.restaurant_name, f.food_name, m.price\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.restaurant_id='SOHA_R' AND m.food_id='f7'",
+          "why": "The join displays readable names while filtering by the composite identifier.",
+          "expected": "Soha Demo Counter, Masala Dosa, price 95.",
+          "file": "sql/members/soha.sql",
+          "line": 56,
+          "endLine": 60
+        },
+        {
+          "title": "S2 Find cheapest offers using analytic ranking",
+          "sql": "WITH ranked AS (\n SELECT m.*, DENSE_RANK() OVER\n  (PARTITION BY food_id ORDER BY price) AS pos\n FROM menu_catalog m\n)\nSELECT food_name, restaurant_name, price\nFROM ranked WHERE pos=1\nORDER BY food_name",
+          "why": "PARTITION BY starts ranking again for each dish. DENSE_RANK preserves ties, so several outlets can share first place.",
+          "expected": "Each dish appears at its cheapest listed outlet; tied cheapest offers all remain.",
+          "file": "sql/members/soha.sql",
+          "line": 65,
+          "endLine": 72
+        },
+        {
+          "title": "S3 Compare prices to each outlet average",
+          "sql": "SELECT r.restaurant_name, f.food_name, m.price\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.price < (\n SELECT AVG(m2.price) FROM contains m2\n WHERE m2.restaurant_id=m.restaurant_id\n)\nORDER BY r.restaurant_name, m.price",
+          "why": "The correlated average is recalculated for the outer row's restaurant. An outlet with only one offer cannot be strictly below its own average.",
+          "expected": "Below-average offers appear; your single-menu fixture is absent.",
+          "file": "sql/members/soha.sql",
+          "line": 77,
+          "endLine": 85
+        },
+        {
+          "title": "S4 Compare highest and lowest prices",
+          "sql": "SELECT f.food_name, COUNT(DISTINCT m.restaurant_id) AS outlets,\n MIN(m.price) AS lowest, MAX(m.price) AS highest,\n MAX(m.price)-MIN(m.price) AS saving\nFROM food_item f JOIN contains m ON m.food_id=f.food_id\nGROUP BY f.food_id, f.food_name\nHAVING COUNT(DISTINCT m.restaurant_id)>1\nORDER BY saving DESC, f.food_name",
+          "why": "Aggregates compare offers for the same dish; HAVING removes dishes offered at only one outlet.",
+          "expected": "Masala Dosa includes your 95 offer, affecting its highest price during this demo.",
+          "file": "sql/members/soha.sql",
+          "line": 90,
+          "endLine": 96
+        },
+        {
+          "title": "S5 Format prices with Oracle functions",
+          "sql": "SELECT r.restaurant_name, f.food_name,\n TO_CHAR(m.price, 'FM999990.00') AS formatted_price,\n ROUND(m.price * 0.90, 2) AS hypothetical_discount\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.restaurant_id='SOHA_R'",
+          "why": "TO_CHAR formats display text; ROUND computes a hypothetical 10 percent discount. It does not update stored prices or claim a real promotion.",
+          "expected": "Formatted price 95.00 and hypothetical discount price 85.5.",
+          "file": "sql/members/soha.sql",
+          "line": 101,
+          "endLine": 107
+        }
+      ],
+      "transactions": [
+        {
+          "title": "Set a savepoint",
+          "sql": "SAVEPOINT before_price_change",
+          "why": "Mark the current transaction position after the committed 95 price.",
+          "expected": "Savepoint created.",
+          "file": "sql/members/soha.sql",
+          "line": 112,
+          "endLine": 112
+        },
+        {
+          "title": "Make an uncommitted change",
+          "sql": "UPDATE contains SET price=999\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+          "why": "Do not COMMIT between this update and ROLLBACK TO.",
+          "expected": "1 row updated.",
+          "file": "sql/members/soha.sql",
+          "line": 117,
+          "endLine": 118
+        },
+        {
+          "title": "Show the temporary value",
+          "sql": "SELECT price FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+          "why": "Your own session sees its uncommitted change.",
+          "expected": "PRICE = 999.",
+          "file": "sql/members/soha.sql",
+          "line": 123,
+          "endLine": 124
+        },
+        {
+          "title": "Undo only the later change",
+          "sql": "ROLLBACK TO before_price_change",
+          "why": "Return to the savepoint; keep the row that was committed earlier.",
+          "expected": "Rollback complete.",
+          "file": "sql/members/soha.sql",
+          "line": 129,
+          "endLine": 129
+        },
+        {
+          "title": "Verify the restored value",
+          "sql": "SELECT price FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+          "why": "The original committed value is restored.",
+          "expected": "PRICE = 95.",
+          "file": "sql/members/soha.sql",
+          "line": 123,
+          "endLine": 124
+        }
+      ],
+      "deletes": [
+        {
+          "title": "Delete the menu before its parent",
+          "sql": "DELETE FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7';\nDELETE FROM restaurant WHERE restaurant_id='SOHA_R'",
+          "why": "Remove the relationship first to respect the FK, then the isolated fixture.",
+          "expected": "Two separate 1 row deleted messages.",
+          "file": "sql/members/soha.sql",
+          "line": 140,
+          "endLine": 142
+        },
+        {
+          "title": "Commit cleanup",
+          "sql": "COMMIT",
+          "why": "Persist both deletions.",
+          "expected": "Commit complete.",
+          "file": "sql/members/soha.sql",
+          "line": 40,
+          "endLine": 40
+        },
+        {
+          "title": "Verify cleanup",
+          "sql": "SELECT COUNT(*) AS remaining FROM restaurant\nWHERE restaurant_id='SOHA_R'",
+          "why": "Your private parent fixture should be gone.",
+          "expected": "REMAINING = 0.",
+          "file": "sql/members/soha.sql",
+          "line": 152,
+          "endLine": 153
+        }
+      ],
+      "viva": [
+        [
+          "Why is price on Contains?",
+          "Different restaurants can charge different prices for the same dish."
+        ],
+        [
+          "Why filter UPDATE by both IDs?",
+          "Both columns form the identity of one menu offer."
+        ],
+        [
+          "COMMIT versus ROLLBACK TO?",
+          "COMMIT makes changes durable and erases savepoints; ROLLBACK TO undoes later uncommitted work."
+        ],
+        [
+          "Does DDL roll back like DML?",
+          "Oracle DDL implicitly commits; use only the dedicated scratch table for the DDL demonstration."
+        ]
+      ],
+      "reportExplanation": "Ranking and price comparison queries already exist in lib/reports.ts. Your private fixture and five SELECTs are in sql/members/soha.sql.",
+      "schemaRefs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "21 to 27",
+          "what": "CONTAINS columns and database constraints"
+        }
+      ],
+      "refs": [
+        {
+          "file": "sql/01-schema.sql",
+          "lines": "21 to 27",
+          "what": "CONTAINS columns and database constraints"
+        },
+        {
+          "file": "lib/entities.ts",
+          "lines": "4",
+          "what": "Your table field allowlist and primary-key identifiers"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "1 and 5",
+          "what": "Driver import and pool creation using server-side environment variables"
+        },
+        {
+          "file": "lib/oracle.ts",
+          "lines": "9",
+          "what": "Read-query execution with bind parameters; finally closes the connection"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "22 to 28",
+          "what": "Shared search and display SELECT construction"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "60",
+          "what": "Shared INSERT builder with bind placeholders"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "69",
+          "what": "Shared UPDATE builder; primary keys stay fixed"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "68",
+          "what": "Shared DELETE builder constrained by primary-key fields"
+        },
+        {
+          "file": "app/api/manage/route.ts",
+          "lines": "71 to 74",
+          "what": "Execute actual SQL; commit success; rollback failure; close connection"
+        },
+        {
+          "file": "lib/db.ts",
+          "lines": "6 and 11",
+          "what": "Read your module into the discovery catalog"
+        },
+        {
+          "file": "sql/members/soha.sql",
+          "lines": "See statement references on your query pages",
+          "what": "Your command-line demonstration worksheet; not a separate JDBC implementation"
+        },
+        {
+          "file": "lib/reports.ts",
+          "lines": "3, 4, 9",
+          "what": "Related existing application report queries; independent of your new worksheet"
+        }
+      ]
+    }
+  ],
+  "ddlSteps": [
+    {
+      "title": "Create a scratch table",
+      "sql": "CREATE TABLE soha_ddl_demo (demo_id NUMBER PRIMARY KEY)",
+      "why": "Use an isolated scratch table; never recreate existing project tables.",
+      "expected": "Table created."
+    },
+    {
+      "title": "Alter the scratch table",
+      "sql": "ALTER TABLE soha_ddl_demo ADD note VARCHAR2(40)",
+      "why": "Add a column using DDL.",
+      "expected": "Table altered."
+    },
+    {
+      "title": "Verify the added column",
+      "sql": "SELECT column_name, data_type FROM user_tab_columns\nWHERE table_name='SOHA_DDL_DEMO' ORDER BY column_id",
+      "why": "Read Oracle metadata to prove the ALTER worked.",
+      "expected": "DEMO_ID NUMBER and NOTE VARCHAR2."
+    },
+    {
+      "title": "Drop only the scratch table",
+      "sql": "DROP TABLE soha_ddl_demo PURGE",
+      "why": "Remove the table created specifically for this demonstration. Oracle DDL commits implicitly.",
+      "expected": "Table dropped."
+    }
+  ],
+  "results": {
+    "executedAt": "2026-10-29T15:29:41.887Z",
+    "database": "VEATS_APP / FREEPDB1",
+    "members": [
+      {
+        "name": "Shriya",
+        "module": "Restaurants",
+        "outputs": [
+          {
+            "group": "writes",
+            "title": "Insert your demonstration restaurant",
+            "sql": "INSERT INTO restaurant\n (restaurant_id, restaurant_name, block, landmark, must_have)\nVALUES ('SHRIYA_R', 'Shriya Demo Canteen', 'GDN',\n 'Demo counter', '[\"Dosa\", \"Coffee\"]')",
+            "why": "Create one parent restaurant record. The dish names inside MUST_HAVE are text, not foreign keys.",
+            "expected": "1 row created.",
+            "results": [
+              {
+                "sql": "INSERT INTO restaurant\n (restaurant_id, restaurant_name, block, landmark, must_have)\nVALUES ('SHRIYA_R', 'Shriya Demo Canteen', 'GDN',\n 'Demo counter', '[\"Dosa\", \"Coffee\"]')",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the insert",
+            "sql": "COMMIT",
+            "why": "Make the insert visible to other database sessions.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Update its location",
+            "sql": "UPDATE restaurant\nSET landmark = 'Updated demo counter'\nWHERE restaurant_id = 'SHRIYA_R'",
+            "why": "The WHERE clause prevents an accidental update of every restaurant.",
+            "expected": "1 row updated.",
+            "results": [
+              {
+                "sql": "UPDATE restaurant\nSET landmark = 'Updated demo counter'\nWHERE restaurant_id = 'SHRIYA_R'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the update",
+            "sql": "COMMIT",
+            "why": "Persist the new landmark.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S1 Display and search your record",
+            "sql": "SELECT restaurant_id, restaurant_name, block, landmark\nFROM restaurant\nWHERE restaurant_id = 'SHRIYA_R'",
+            "why": "A primary-key search displays exactly the inserted record and updated landmark.",
+            "expected": "One row; landmark is Updated demo counter.",
+            "results": [
+              {
+                "sql": "SELECT restaurant_id, restaurant_name, block, landmark\nFROM restaurant\nWHERE restaurant_id = 'SHRIYA_R'",
+                "rows": [
+                  {
+                    "RESTAURANT_ID": "SHRIYA_R",
+                    "RESTAURANT_NAME": "Shriya Demo Canteen",
+                    "BLOCK": "GDN",
+                    "LANDMARK": "Updated demo counter"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S2 Summarize menus including empty restaurants",
+            "sql": "SELECT r.restaurant_name, COUNT(m.food_id) AS dishes,\n       ROUND(AVG(m.price), 2) AS avg_price\nFROM restaurant r\nLEFT JOIN contains m ON m.restaurant_id = r.restaurant_id\nGROUP BY r.restaurant_id, r.restaurant_name\nORDER BY r.restaurant_name",
+            "why": "LEFT JOIN retains restaurants with no menu. COUNT(column) ignores the NULL child row; AVG is NULL for an empty menu.",
+            "expected": "Your demo restaurant has 0 dishes and NULL average; seeded outlets have menus.",
+            "results": [
+              {
+                "sql": "SELECT r.restaurant_name, COUNT(m.food_id) AS dishes,\n       ROUND(AVG(m.price), 2) AS avg_price\nFROM restaurant r\nLEFT JOIN contains m ON m.restaurant_id = r.restaurant_id\nGROUP BY r.restaurant_id, r.restaurant_name\nORDER BY r.restaurant_name",
+                "rows": [
+                  {
+                    "RESTAURANT_NAME": "GDN Canteen",
+                    "DISHES": 4,
+                    "AVG_PRICE": 65
+                  },
+                  {
+                    "RESTAURANT_NAME": "One Food World",
+                    "DISHES": 5,
+                    "AVG_PRICE": 115
+                  },
+                  {
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "DISHES": 5,
+                    "AVG_PRICE": 66
+                  },
+                  {
+                    "RESTAURANT_NAME": "SJT Canteen",
+                    "DISHES": 4,
+                    "AVG_PRICE": 61.25
+                  },
+                  {
+                    "RESTAURANT_NAME": "Shriya Demo Canteen",
+                    "DISHES": 0,
+                    "AVG_PRICE": null
+                  },
+                  {
+                    "RESTAURANT_NAME": "Technology Tower Food Court",
+                    "DISHES": 5,
+                    "AVG_PRICE": 137
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S3 Find outlets below the overall menu average",
+            "sql": "SELECT r.restaurant_name\nFROM restaurant r\nWHERE EXISTS (\n SELECT 1 FROM contains m\n WHERE m.restaurant_id = r.restaurant_id\n AND m.price < (SELECT AVG(price) FROM contains)\n)\nORDER BY r.restaurant_name",
+            "why": "A correlated EXISTS tests each restaurant. The nested AVG subquery supplies a database-wide comparison.",
+            "expected": "Only restaurants with at least one below-average offer appear.",
+            "results": [
+              {
+                "sql": "SELECT r.restaurant_name\nFROM restaurant r\nWHERE EXISTS (\n SELECT 1 FROM contains m\n WHERE m.restaurant_id = r.restaurant_id\n AND m.price < (SELECT AVG(price) FROM contains)\n)\nORDER BY r.restaurant_name",
+                "rows": [
+                  {
+                    "RESTAURANT_NAME": "GDN Canteen"
+                  },
+                  {
+                    "RESTAURANT_NAME": "One Food World"
+                  },
+                  {
+                    "RESTAURANT_NAME": "PRP Canteen"
+                  },
+                  {
+                    "RESTAURANT_NAME": "SJT Canteen"
+                  },
+                  {
+                    "RESTAURANT_NAME": "Technology Tower Food Court"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S4 Format the directory using SQL functions",
+            "sql": "SELECT UPPER(restaurant_name) AS outlet,\n       SUBSTR(landmark, 1, 28) AS location,\n       LENGTH(restaurant_name) AS name_length\nFROM restaurant\nORDER BY restaurant_name",
+            "why": "UPPER changes display case, SUBSTR shortens a value, and LENGTH counts its characters. Stored names are unchanged.",
+            "expected": "All restaurants appear with uppercase display names and character counts.",
+            "results": [
+              {
+                "sql": "SELECT UPPER(restaurant_name) AS outlet,\n       SUBSTR(landmark, 1, 28) AS location,\n       LENGTH(restaurant_name) AS name_length\nFROM restaurant\nORDER BY restaurant_name",
+                "rows": [
+                  {
+                    "OUTLET": "GDN CANTEEN",
+                    "LOCATION": "G. D. Naidu Block, VIT Vello",
+                    "NAME_LENGTH": 11
+                  },
+                  {
+                    "OUTLET": "ONE FOOD WORLD",
+                    "LOCATION": "Gorbachev Road, VIT Vellore",
+                    "NAME_LENGTH": 14
+                  },
+                  {
+                    "OUTLET": "PRP CANTEEN",
+                    "LOCATION": "Pearl Research Park, VIT Vel",
+                    "NAME_LENGTH": 11
+                  },
+                  {
+                    "OUTLET": "SJT CANTEEN",
+                    "LOCATION": "Silver Jubilee Tower, VIT Ve",
+                    "NAME_LENGTH": 11
+                  },
+                  {
+                    "OUTLET": "SHRIYA DEMO CANTEEN",
+                    "LOCATION": "Updated demo counter",
+                    "NAME_LENGTH": 19
+                  },
+                  {
+                    "OUTLET": "TECHNOLOGY TOWER FOOD COURT",
+                    "LOCATION": "Near Technology Tower, VIT V",
+                    "NAME_LENGTH": 27
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S5 Find restaurants serving both Indian and vegetarian food",
+            "sql": "SELECT r.restaurant_name\nFROM restaurant r\nWHERE r.restaurant_id IN (\n SELECT m.restaurant_id FROM contains m\n JOIN food_item f ON f.food_id = m.food_id\n WHERE f.cuisine_id = 'Indian'\n INTERSECT\n SELECT m.restaurant_id FROM contains m\n JOIN food_item f ON f.food_id = m.food_id\n WHERE f.dietary_type_id = 'Vegetarian'\n)\nORDER BY r.restaurant_name",
+            "why": "INTERSECT returns restaurant IDs present in both sets. The two qualifying dishes can be different dishes.",
+            "expected": "Outlets must satisfy both set conditions; an empty restaurant does not qualify.",
+            "results": [
+              {
+                "sql": "SELECT r.restaurant_name\nFROM restaurant r\nWHERE r.restaurant_id IN (\n SELECT m.restaurant_id FROM contains m\n JOIN food_item f ON f.food_id = m.food_id\n WHERE f.cuisine_id = 'Indian'\n INTERSECT\n SELECT m.restaurant_id FROM contains m\n JOIN food_item f ON f.food_id = m.food_id\n WHERE f.dietary_type_id = 'Vegetarian'\n)\nORDER BY r.restaurant_name",
+                "rows": [
+                  {
+                    "RESTAURANT_NAME": "GDN Canteen"
+                  },
+                  {
+                    "RESTAURANT_NAME": "PRP Canteen"
+                  },
+                  {
+                    "RESTAURANT_NAME": "SJT Canteen"
+                  },
+                  {
+                    "RESTAURANT_NAME": "Technology Tower Food Court"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Delete only your restaurant",
+            "sql": "DELETE FROM restaurant WHERE restaurant_id = 'SHRIYA_R'",
+            "why": "No menu references this independent demonstration record, so its deletion is allowed.",
+            "expected": "1 row deleted.",
+            "results": [
+              {
+                "sql": "DELETE FROM restaurant WHERE restaurant_id = 'SHRIYA_R'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Commit the deletion",
+            "sql": "COMMIT",
+            "why": "Make cleanup permanent.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Verify cleanup",
+            "sql": "SELECT COUNT(*) AS remaining FROM restaurant\nWHERE restaurant_id = 'SHRIYA_R'",
+            "why": "Count the specific ID, not the entire table.",
+            "expected": "REMAINING = 0.",
+            "results": [
+              {
+                "sql": "SELECT COUNT(*) AS remaining FROM restaurant\nWHERE restaurant_id = 'SHRIYA_R'",
+                "rows": [
+                  {
+                    "REMAINING": 0
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Trisha",
+        "module": "Food items",
+        "outputs": [
+          {
+            "group": "writes",
+            "title": "Insert your dish",
+            "sql": "INSERT INTO food_item\n (food_id, food_name, category_id, cuisine_id,\n  dietary_type_id, description)\nVALUES ('TRISHA_F', 'Trisha Demo Rice', 'Meals', 'Indian',\n 'Vegetarian', 'Dish for the database demonstration')",
+            "why": "All three classification IDs must already exist. Do not invent an unseeded lookup ID.",
+            "expected": "1 row created.",
+            "results": [
+              {
+                "sql": "INSERT INTO food_item\n (food_id, food_name, category_id, cuisine_id,\n  dietary_type_id, description)\nVALUES ('TRISHA_F', 'Trisha Demo Rice', 'Meals', 'Indian',\n 'Vegetarian', 'Dish for the database demonstration')",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the insert",
+            "sql": "COMMIT",
+            "why": "Persist the dish.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Update its description",
+            "sql": "UPDATE food_item\nSET description = 'Updated vegetarian rice description'\nWHERE food_id = 'TRISHA_F'",
+            "why": "Change a non-key field while retaining the identity and valid references.",
+            "expected": "1 row updated.",
+            "results": [
+              {
+                "sql": "UPDATE food_item\nSET description = 'Updated vegetarian rice description'\nWHERE food_id = 'TRISHA_F'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the update",
+            "sql": "COMMIT",
+            "why": "Persist the edit.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S1 Search your dish and verify the update",
+            "sql": "SELECT food_id, food_name, description\nFROM food_item\nWHERE food_id = 'TRISHA_F'",
+            "why": "A simple SELECT verifies the insert and updated description.",
+            "expected": "One row with Updated vegetarian rice description.",
+            "results": [
+              {
+                "sql": "SELECT food_id, food_name, description\nFROM food_item\nWHERE food_id = 'TRISHA_F'",
+                "rows": [
+                  {
+                    "FOOD_ID": "TRISHA_F",
+                    "FOOD_NAME": "Trisha Demo Rice",
+                    "DESCRIPTION": "Updated vegetarian rice description"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S2 Display classification names with four tables",
+            "sql": "SELECT f.food_name, c.category_name, u.cuisine_name,\n       d.type_name\nFROM food_item f\nJOIN category c ON c.category_id = f.category_id\nJOIN cuisine u ON u.cuisine_id = f.cuisine_id\nJOIN dietary_type d ON d.dietary_type_id = f.dietary_type_id\nORDER BY f.food_name",
+            "why": "Joins follow the three foreign keys rather than duplicating lookup names in Food_Item.",
+            "expected": "Your dish appears as Meals, Indian, Vegetarian.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name, c.category_name, u.cuisine_name,\n       d.type_name\nFROM food_item f\nJOIN category c ON c.category_id = f.category_id\nJOIN cuisine u ON u.cuisine_id = f.cuisine_id\nJOIN dietary_type d ON d.dietary_type_id = f.dietary_type_id\nORDER BY f.food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Chicken Noodle Bowl",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Asian",
+                    "TYPE_NAME": "Non-vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "Chocolate Brownie",
+                    "CATEGORY_NAME": "Desserts",
+                    "CUISINE_NAME": "Continental",
+                    "TYPE_NAME": "Vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "Classic Veg Burger",
+                    "CATEGORY_NAME": "Snacks",
+                    "CUISINE_NAME": "Continental",
+                    "TYPE_NAME": "Vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "Filter Coffee",
+                    "CATEGORY_NAME": "Beverages",
+                    "CUISINE_NAME": "Indian",
+                    "TYPE_NAME": "Vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "French Fries",
+                    "CATEGORY_NAME": "Snacks",
+                    "CUISINE_NAME": "Continental",
+                    "TYPE_NAME": "Vegan"
+                  },
+                  {
+                    "FOOD_NAME": "Garden Fresh Salad",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Continental",
+                    "TYPE_NAME": "Vegan"
+                  },
+                  {
+                    "FOOD_NAME": "Iced Latte",
+                    "CATEGORY_NAME": "Beverages",
+                    "CUISINE_NAME": "Continental",
+                    "TYPE_NAME": "Vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "Idli Sambar",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Indian",
+                    "TYPE_NAME": "Vegan"
+                  },
+                  {
+                    "FOOD_NAME": "Margherita Pizza",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Italian",
+                    "TYPE_NAME": "Vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "Masala Dosa",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Indian",
+                    "TYPE_NAME": "Vegan"
+                  },
+                  {
+                    "FOOD_NAME": "Paneer Power Bowl",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Indian",
+                    "TYPE_NAME": "Vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "Trisha Demo Rice",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Indian",
+                    "TYPE_NAME": "Vegetarian"
+                  },
+                  {
+                    "FOOD_NAME": "Veg Fried Rice",
+                    "CATEGORY_NAME": "Meals",
+                    "CUISINE_NAME": "Asian",
+                    "TYPE_NAME": "Vegan"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S3 Find dishes with an affordable offer",
+            "sql": "SELECT f.food_name\nFROM food_item f\nWHERE EXISTS (\n SELECT 1 FROM contains m\n WHERE m.food_id = f.food_id AND m.price < 100\n)\nORDER BY f.food_name",
+            "why": "Correlated EXISTS returns a dish once even if several restaurants offer it below 100.",
+            "expected": "Only dishes with a listed price below 100 qualify; your unlisted demo dish does not.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name\nFROM food_item f\nWHERE EXISTS (\n SELECT 1 FROM contains m\n WHERE m.food_id = f.food_id AND m.price < 100\n)\nORDER BY f.food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Chocolate Brownie"
+                  },
+                  {
+                    "FOOD_NAME": "Filter Coffee"
+                  },
+                  {
+                    "FOOD_NAME": "French Fries"
+                  },
+                  {
+                    "FOOD_NAME": "Iced Latte"
+                  },
+                  {
+                    "FOOD_NAME": "Idli Sambar"
+                  },
+                  {
+                    "FOOD_NAME": "Masala Dosa"
+                  },
+                  {
+                    "FOOD_NAME": "Veg Fried Rice"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S4 Count dishes by category and diet",
+            "sql": "SELECT category_id, dietary_type_id, COUNT(*) AS dishes\nFROM food_item\nGROUP BY category_id, dietary_type_id\nHAVING COUNT(*) >= 2\nORDER BY category_id, dietary_type_id",
+            "why": "GROUP BY forms category/diet groups; HAVING filters aggregate counts after grouping.",
+            "expected": "Only groups containing at least two dishes appear.",
+            "results": [
+              {
+                "sql": "SELECT category_id, dietary_type_id, COUNT(*) AS dishes\nFROM food_item\nGROUP BY category_id, dietary_type_id\nHAVING COUNT(*) >= 2\nORDER BY category_id, dietary_type_id",
+                "rows": [
+                  {
+                    "CATEGORY_ID": "Beverages",
+                    "DIETARY_TYPE_ID": "Vegetarian",
+                    "DISHES": 2
+                  },
+                  {
+                    "CATEGORY_ID": "Meals",
+                    "DIETARY_TYPE_ID": "Vegan",
+                    "DISHES": 4
+                  },
+                  {
+                    "CATEGORY_ID": "Meals",
+                    "DIETARY_TYPE_ID": "Vegetarian",
+                    "DISHES": 3
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S5 Find food without a menu using MINUS",
+            "sql": "SELECT food_id, food_name FROM food_item\nMINUS\nSELECT f.food_id, f.food_name\nFROM food_item f JOIN contains m ON m.food_id = f.food_id\nORDER BY food_name",
+            "why": "MINUS removes listed dishes from all dishes. This also explains why merely inserting Food_Item does not make it discoverable in a restaurant menu.",
+            "expected": "TRISHA_F appears because it has no Contains row.",
+            "results": [
+              {
+                "sql": "SELECT food_id, food_name FROM food_item\nMINUS\nSELECT f.food_id, f.food_name\nFROM food_item f JOIN contains m ON m.food_id = f.food_id\nORDER BY food_name",
+                "rows": [
+                  {
+                    "FOOD_ID": "TRISHA_F",
+                    "FOOD_NAME": "Trisha Demo Rice"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Delete only your unlisted dish",
+            "sql": "DELETE FROM food_item WHERE food_id = 'TRISHA_F'",
+            "why": "Your record has no menu/allergen children. Do not delete seed dishes.",
+            "expected": "1 row deleted.",
+            "results": [
+              {
+                "sql": "DELETE FROM food_item WHERE food_id = 'TRISHA_F'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Commit the deletion",
+            "sql": "COMMIT",
+            "why": "Persist cleanup.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Verify cleanup",
+            "sql": "SELECT COUNT(*) AS remaining FROM food_item\nWHERE food_id = 'TRISHA_F'",
+            "why": "Verify your ID is gone.",
+            "expected": "REMAINING = 0.",
+            "results": [
+              {
+                "sql": "SELECT COUNT(*) AS remaining FROM food_item\nWHERE food_id = 'TRISHA_F'",
+                "rows": [
+                  {
+                    "REMAINING": 0
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Tanisi",
+        "module": "Categories cuisines and dietary types",
+        "outputs": [
+          {
+            "group": "writes",
+            "title": "Insert one record into each owned table",
+            "sql": "INSERT INTO category VALUES ('TANISI_C', 'Tanisi Demo Category');\nINSERT INTO cuisine VALUES ('TANISI_U', 'Tanisi Demo Cuisine');\nINSERT INTO dietary_type VALUES ('TANISI_D', 'Tanisi Demo Diet')",
+            "why": "These are three INSERT statements. They intentionally have no child food rows, so cleanup can be done independently.",
+            "expected": "Three separate 1 row created messages.",
+            "results": [
+              {
+                "sql": "INSERT INTO category VALUES ('TANISI_C', 'Tanisi Demo Category')",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "INSERT INTO cuisine VALUES ('TANISI_U', 'Tanisi Demo Cuisine')",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "INSERT INTO dietary_type VALUES ('TANISI_D', 'Tanisi Demo Diet')",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the inserts",
+            "sql": "COMMIT",
+            "why": "Persist all three in one transaction.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Update all three lookup names",
+            "sql": "UPDATE category SET category_name = 'Tanisi Category Updated'\nWHERE category_id = 'TANISI_C';\nUPDATE cuisine SET cuisine_name = 'Tanisi Cuisine Updated'\nWHERE cuisine_id = 'TANISI_U';\nUPDATE dietary_type SET type_name = 'Tanisi Diet Updated'\nWHERE dietary_type_id = 'TANISI_D'",
+            "why": "IDs remain stable while display names change. The API maps IDs to the current display names.",
+            "expected": "Three separate 1 row updated messages.",
+            "results": [
+              {
+                "sql": "UPDATE category SET category_name = 'Tanisi Category Updated'\nWHERE category_id = 'TANISI_C'",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "UPDATE cuisine SET cuisine_name = 'Tanisi Cuisine Updated'\nWHERE cuisine_id = 'TANISI_U'",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "UPDATE dietary_type SET type_name = 'Tanisi Diet Updated'\nWHERE dietary_type_id = 'TANISI_D'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the updates",
+            "sql": "COMMIT",
+            "why": "Persist the three edits.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S1 Verify all three updates using UNION ALL",
+            "sql": "SELECT 'Category' AS kind, category_id AS id,\n       category_name AS name FROM category\nWHERE category_id = 'TANISI_C'\nUNION ALL\nSELECT 'Cuisine', cuisine_id, cuisine_name FROM cuisine\nWHERE cuisine_id = 'TANISI_U'\nUNION ALL\nSELECT 'Diet', dietary_type_id, type_name FROM dietary_type\nWHERE dietary_type_id = 'TANISI_D'",
+            "why": "UNION ALL combines compatible columns without removing duplicates. Labels identify the source entity.",
+            "expected": "Three rows with the Updated names.",
+            "results": [
+              {
+                "sql": "SELECT 'Category' AS kind, category_id AS id,\n       category_name AS name FROM category\nWHERE category_id = 'TANISI_C'\nUNION ALL\nSELECT 'Cuisine', cuisine_id, cuisine_name FROM cuisine\nWHERE cuisine_id = 'TANISI_U'\nUNION ALL\nSELECT 'Diet', dietary_type_id, type_name FROM dietary_type\nWHERE dietary_type_id = 'TANISI_D'",
+                "rows": [
+                  {
+                    "KIND": "Category",
+                    "ID": "TANISI_C",
+                    "NAME": "Tanisi Category Updated"
+                  },
+                  {
+                    "KIND": "Cuisine",
+                    "ID": "TANISI_U",
+                    "NAME": "Tanisi Cuisine Updated"
+                  },
+                  {
+                    "KIND": "Diet",
+                    "ID": "TANISI_D",
+                    "NAME": "Tanisi Diet Updated"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S2 Count food in every category",
+            "sql": "SELECT c.category_name, COUNT(f.food_id) AS dishes\nFROM category c LEFT JOIN food_item f\n ON f.category_id = c.category_id\nGROUP BY c.category_id, c.category_name\nORDER BY dishes DESC, c.category_name",
+            "why": "LEFT JOIN includes unused categories; COUNT(f.food_id) makes the empty category count zero.",
+            "expected": "Tanisi Category Updated has 0 dishes.",
+            "results": [
+              {
+                "sql": "SELECT c.category_name, COUNT(f.food_id) AS dishes\nFROM category c LEFT JOIN food_item f\n ON f.category_id = c.category_id\nGROUP BY c.category_id, c.category_name\nORDER BY dishes DESC, c.category_name",
+                "rows": [
+                  {
+                    "CATEGORY_NAME": "Meals",
+                    "DISHES": 7
+                  },
+                  {
+                    "CATEGORY_NAME": "Beverages",
+                    "DISHES": 2
+                  },
+                  {
+                    "CATEGORY_NAME": "Snacks",
+                    "DISHES": 2
+                  },
+                  {
+                    "CATEGORY_NAME": "Desserts",
+                    "DISHES": 1
+                  },
+                  {
+                    "CATEGORY_NAME": "Tanisi Category Updated",
+                    "DISHES": 0
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S3 Find cuisines with more than one dish",
+            "sql": "SELECT c.cuisine_name, COUNT(f.food_id) AS dishes\nFROM cuisine c JOIN food_item f\n ON f.cuisine_id = c.cuisine_id\nGROUP BY c.cuisine_id, c.cuisine_name\nHAVING COUNT(f.food_id) > 1\nORDER BY dishes DESC",
+            "why": "An aggregate join with HAVING identifies commonly used cuisines.",
+            "expected": "Only cuisines associated with at least two dishes appear.",
+            "results": [
+              {
+                "sql": "SELECT c.cuisine_name, COUNT(f.food_id) AS dishes\nFROM cuisine c JOIN food_item f\n ON f.cuisine_id = c.cuisine_id\nGROUP BY c.cuisine_id, c.cuisine_name\nHAVING COUNT(f.food_id) > 1\nORDER BY dishes DESC",
+                "rows": [
+                  {
+                    "CUISINE_NAME": "Continental",
+                    "DISHES": 5
+                  },
+                  {
+                    "CUISINE_NAME": "Indian",
+                    "DISHES": 4
+                  },
+                  {
+                    "CUISINE_NAME": "Asian",
+                    "DISHES": 2
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S4 Find unused dietary types",
+            "sql": "SELECT d.type_name\nFROM dietary_type d\nWHERE NOT EXISTS (\n SELECT 1 FROM food_item f\n WHERE f.dietary_type_id = d.dietary_type_id\n)\nORDER BY d.type_name",
+            "why": "A correlated NOT EXISTS implements an anti-join: select parents with no children.",
+            "expected": "Tanisi Diet Updated appears; other unused types may also appear.",
+            "results": [
+              {
+                "sql": "SELECT d.type_name\nFROM dietary_type d\nWHERE NOT EXISTS (\n SELECT 1 FROM food_item f\n WHERE f.dietary_type_id = d.dietary_type_id\n)\nORDER BY d.type_name",
+                "rows": [
+                  {
+                    "TYPE_NAME": "Tanisi Diet Updated"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S5 Find Indian meals with INTERSECT",
+            "sql": "SELECT food_name FROM food_item WHERE cuisine_id = 'Indian'\nINTERSECT\nSELECT food_name FROM food_item WHERE category_id = 'Meals'\nORDER BY food_name",
+            "why": "The result belongs to both sets. INTERSECT removes duplicates and requires compatible selected column types.",
+            "expected": "Only dish names that are both Indian and Meals appear.",
+            "results": [
+              {
+                "sql": "SELECT food_name FROM food_item WHERE cuisine_id = 'Indian'\nINTERSECT\nSELECT food_name FROM food_item WHERE category_id = 'Meals'\nORDER BY food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Idli Sambar"
+                  },
+                  {
+                    "FOOD_NAME": "Masala Dosa"
+                  },
+                  {
+                    "FOOD_NAME": "Paneer Power Bowl"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Delete only your three unused lookups",
+            "sql": "DELETE FROM category WHERE category_id = 'TANISI_C';\nDELETE FROM cuisine WHERE cuisine_id = 'TANISI_U';\nDELETE FROM dietary_type WHERE dietary_type_id = 'TANISI_D'",
+            "why": "No food references these temporary IDs. Deleting a referenced real lookup would be rejected.",
+            "expected": "Three separate 1 row deleted messages.",
+            "results": [
+              {
+                "sql": "DELETE FROM category WHERE category_id = 'TANISI_C'",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "DELETE FROM cuisine WHERE cuisine_id = 'TANISI_U'",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "DELETE FROM dietary_type WHERE dietary_type_id = 'TANISI_D'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Commit cleanup",
+            "sql": "COMMIT",
+            "why": "Persist all three deletions.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Verify cleanup",
+            "sql": "SELECT\n (SELECT COUNT(*) FROM category WHERE category_id='TANISI_C')\n + (SELECT COUNT(*) FROM cuisine WHERE cuisine_id='TANISI_U')\n + (SELECT COUNT(*) FROM dietary_type\n    WHERE dietary_type_id='TANISI_D') AS remaining\nFROM dual",
+            "why": "Scalar subqueries add remaining counts; DUAL supplies one result row.",
+            "expected": "REMAINING = 0.",
+            "results": [
+              {
+                "sql": "SELECT\n (SELECT COUNT(*) FROM category WHERE category_id='TANISI_C')\n + (SELECT COUNT(*) FROM cuisine WHERE cuisine_id='TANISI_U')\n + (SELECT COUNT(*) FROM dietary_type\n    WHERE dietary_type_id='TANISI_D') AS remaining\nFROM dual",
+                "rows": [
+                  {
+                    "REMAINING": 0
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Asmi",
+        "module": "Allergens and food allergen links",
+        "outputs": [
+          {
+            "group": "writes",
+            "title": "Insert a parent allergen and its link",
+            "sql": "INSERT INTO allergen VALUES ('ASMI_A', 'Asmi Demo Allergen');\nINSERT INTO has_allergen(food_id, allergen_id)\nVALUES ('f7', 'ASMI_A')",
+            "why": "Insert the parent before the relationship because of the FK. Linking f7 to a demo allergen is a demonstration, not a real allergy claim.",
+            "expected": "Two separate 1 row created messages.",
+            "results": [
+              {
+                "sql": "INSERT INTO allergen VALUES ('ASMI_A', 'Asmi Demo Allergen')",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "INSERT INTO has_allergen(food_id, allergen_id)\nVALUES ('f7', 'ASMI_A')",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the inserts",
+            "sql": "COMMIT",
+            "why": "Make both parent and relationship visible.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Update the name and relationship",
+            "sql": "UPDATE allergen SET allergen_name = 'Asmi Allergen Updated'\nWHERE allergen_id = 'ASMI_A';\nUPDATE has_allergen SET food_id = 'f9'\nWHERE food_id = 'f7' AND allergen_id = 'ASMI_A'",
+            "why": "The master name changes; the link moves from f7 to f9. Both columns identify the original relationship in the WHERE clause.",
+            "expected": "Two separate 1 row updated messages.",
+            "results": [
+              {
+                "sql": "UPDATE allergen SET allergen_name = 'Asmi Allergen Updated'\nWHERE allergen_id = 'ASMI_A'",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "UPDATE has_allergen SET food_id = 'f9'\nWHERE food_id = 'f7' AND allergen_id = 'ASMI_A'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the updates",
+            "sql": "COMMIT",
+            "why": "Persist both edits.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S1 Display the updated relationship",
+            "sql": "SELECT f.food_name, a.allergen_name\nFROM has_allergen h\nJOIN food_item f ON f.food_id = h.food_id\nJOIN allergen a ON a.allergen_id = h.allergen_id\nWHERE h.allergen_id = 'ASMI_A'",
+            "why": "A three-table join follows both FKs. It verifies the updated master name and changed food ID.",
+            "expected": "Idli Sambar linked to Asmi Allergen Updated.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name, a.allergen_name\nFROM has_allergen h\nJOIN food_item f ON f.food_id = h.food_id\nJOIN allergen a ON a.allergen_id = h.allergen_id\nWHERE h.allergen_id = 'ASMI_A'",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Idli Sambar",
+                    "ALLERGEN_NAME": "Asmi Allergen Updated"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S2 List allergen names for every food",
+            "sql": "SELECT f.food_name,\n NVL(LISTAGG(a.allergen_name, ', ')\n WITHIN GROUP (ORDER BY a.allergen_name), 'None listed')\n AS listed_allergens\nFROM food_item f\nLEFT JOIN has_allergen h ON h.food_id = f.food_id\nLEFT JOIN allergen a ON a.allergen_id = h.allergen_id\nGROUP BY f.food_id, f.food_name\nORDER BY f.food_name",
+            "why": "LEFT JOIN retains foods without links. LISTAGG combines names, and NVL provides a display value when the aggregate is NULL.",
+            "expected": "All food appears; your temporary label is included for Idli Sambar.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name,\n NVL(LISTAGG(a.allergen_name, ', ')\n WITHIN GROUP (ORDER BY a.allergen_name), 'None listed')\n AS listed_allergens\nFROM food_item f\nLEFT JOIN has_allergen h ON h.food_id = f.food_id\nLEFT JOIN allergen a ON a.allergen_id = h.allergen_id\nGROUP BY f.food_id, f.food_name\nORDER BY f.food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Chicken Noodle Bowl",
+                    "LISTED_ALLERGENS": "Gluten, Soy"
+                  },
+                  {
+                    "FOOD_NAME": "Chocolate Brownie",
+                    "LISTED_ALLERGENS": "Gluten, Milk, Nuts"
+                  },
+                  {
+                    "FOOD_NAME": "Classic Veg Burger",
+                    "LISTED_ALLERGENS": "Gluten"
+                  },
+                  {
+                    "FOOD_NAME": "Filter Coffee",
+                    "LISTED_ALLERGENS": "Milk"
+                  },
+                  {
+                    "FOOD_NAME": "French Fries",
+                    "LISTED_ALLERGENS": "None listed"
+                  },
+                  {
+                    "FOOD_NAME": "Garden Fresh Salad",
+                    "LISTED_ALLERGENS": "None listed"
+                  },
+                  {
+                    "FOOD_NAME": "Iced Latte",
+                    "LISTED_ALLERGENS": "Milk"
+                  },
+                  {
+                    "FOOD_NAME": "Idli Sambar",
+                    "LISTED_ALLERGENS": "Asmi Allergen Updated"
+                  },
+                  {
+                    "FOOD_NAME": "Margherita Pizza",
+                    "LISTED_ALLERGENS": "Gluten, Milk"
+                  },
+                  {
+                    "FOOD_NAME": "Masala Dosa",
+                    "LISTED_ALLERGENS": "None listed"
+                  },
+                  {
+                    "FOOD_NAME": "Paneer Power Bowl",
+                    "LISTED_ALLERGENS": "Milk"
+                  },
+                  {
+                    "FOOD_NAME": "Veg Fried Rice",
+                    "LISTED_ALLERGENS": "Soy"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S3 Find vegetarian food without listed milk",
+            "sql": "SELECT f.food_name\nFROM food_item f\nWHERE f.dietary_type_id IN ('Vegetarian', 'Vegan')\nAND NOT EXISTS (\n SELECT 1 FROM has_allergen h\n WHERE h.food_id = f.food_id AND h.allergen_id = 'Milk'\n)\nORDER BY f.food_name",
+            "why": "The correlated anti-join excludes foods with a Milk link. Absence of a sample link does not certify medical safety.",
+            "expected": "Only vegetarian/vegan foods with no listed Milk relationship appear.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name\nFROM food_item f\nWHERE f.dietary_type_id IN ('Vegetarian', 'Vegan')\nAND NOT EXISTS (\n SELECT 1 FROM has_allergen h\n WHERE h.food_id = f.food_id AND h.allergen_id = 'Milk'\n)\nORDER BY f.food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Classic Veg Burger"
+                  },
+                  {
+                    "FOOD_NAME": "French Fries"
+                  },
+                  {
+                    "FOOD_NAME": "Garden Fresh Salad"
+                  },
+                  {
+                    "FOOD_NAME": "Idli Sambar"
+                  },
+                  {
+                    "FOOD_NAME": "Masala Dosa"
+                  },
+                  {
+                    "FOOD_NAME": "Veg Fried Rice"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S4 Find foods with several listed allergens",
+            "sql": "SELECT f.food_name, COUNT(*) AS allergen_count\nFROM food_item f JOIN has_allergen h ON h.food_id=f.food_id\nGROUP BY f.food_id, f.food_name\nHAVING COUNT(*) >= 2\nORDER BY allergen_count DESC, f.food_name",
+            "why": "GROUP BY counts links per food, and HAVING keeps foods with two or more.",
+            "expected": "Examples include pizza, brownie and chicken noodles in the seed data.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name, COUNT(*) AS allergen_count\nFROM food_item f JOIN has_allergen h ON h.food_id=f.food_id\nGROUP BY f.food_id, f.food_name\nHAVING COUNT(*) >= 2\nORDER BY allergen_count DESC, f.food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Chocolate Brownie",
+                    "ALLERGEN_COUNT": 3
+                  },
+                  {
+                    "FOOD_NAME": "Chicken Noodle Bowl",
+                    "ALLERGEN_COUNT": 2
+                  },
+                  {
+                    "FOOD_NAME": "Margherita Pizza",
+                    "ALLERGEN_COUNT": 2
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S5 Find foods sharing allergens with pizza",
+            "sql": "SELECT f.food_name\nFROM food_item f\nWHERE f.food_id <> 'f2'\nAND EXISTS (\n SELECT 1 FROM has_allergen h\n WHERE h.food_id = f.food_id\n AND h.allergen_id IN (\n  SELECT allergen_id FROM has_allergen WHERE food_id='f2'\n )\n)\nORDER BY f.food_name",
+            "why": "An IN subquery gets pizza allergens; correlated EXISTS finds other foods sharing any of them, without duplicate outer rows.",
+            "expected": "Other foods sharing Milk or Gluten with f2 appear; pizza itself is excluded.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name\nFROM food_item f\nWHERE f.food_id <> 'f2'\nAND EXISTS (\n SELECT 1 FROM has_allergen h\n WHERE h.food_id = f.food_id\n AND h.allergen_id IN (\n  SELECT allergen_id FROM has_allergen WHERE food_id='f2'\n )\n)\nORDER BY f.food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Chicken Noodle Bowl"
+                  },
+                  {
+                    "FOOD_NAME": "Chocolate Brownie"
+                  },
+                  {
+                    "FOOD_NAME": "Classic Veg Burger"
+                  },
+                  {
+                    "FOOD_NAME": "Filter Coffee"
+                  },
+                  {
+                    "FOOD_NAME": "Iced Latte"
+                  },
+                  {
+                    "FOOD_NAME": "Paneer Power Bowl"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Delete the link before its parent",
+            "sql": "DELETE FROM has_allergen\nWHERE food_id = 'f9' AND allergen_id = 'ASMI_A';\nDELETE FROM allergen WHERE allergen_id = 'ASMI_A'",
+            "why": "The child relationship must be removed before the referenced master row.",
+            "expected": "Two separate 1 row deleted messages.",
+            "results": [
+              {
+                "sql": "DELETE FROM has_allergen\nWHERE food_id = 'f9' AND allergen_id = 'ASMI_A'",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "DELETE FROM allergen WHERE allergen_id = 'ASMI_A'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Commit cleanup",
+            "sql": "COMMIT",
+            "why": "Persist removal of both demonstration records.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Verify cleanup",
+            "sql": "SELECT COUNT(*) AS remaining FROM allergen\nWHERE allergen_id = 'ASMI_A'",
+            "why": "The restrictive FK ensures no links can survive after successful parent deletion.",
+            "expected": "REMAINING = 0.",
+            "results": [
+              {
+                "sql": "SELECT COUNT(*) AS remaining FROM allergen\nWHERE allergen_id = 'ASMI_A'",
+                "rows": [
+                  {
+                    "REMAINING": 0
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Soha",
+        "module": "Menu prices and transactions",
+        "outputs": [
+          {
+            "group": "writes",
+            "title": "Create your independent parent fixture",
+            "sql": "INSERT INTO restaurant\n (restaurant_id, restaurant_name, block, landmark, must_have)\nVALUES ('SOHA_R', 'Soha Demo Counter', 'TT', 'Demo counter', '[]')",
+            "why": "This fixture supplies your restaurant FK; its temporary identity prevents modifying seed offers.",
+            "expected": "1 row created.",
+            "results": [
+              {
+                "sql": "INSERT INTO restaurant\n (restaurant_id, restaurant_name, block, landmark, must_have)\nVALUES ('SOHA_R', 'Soha Demo Counter', 'TT', 'Demo counter', '[]')",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Insert your menu price",
+            "sql": "INSERT INTO contains(restaurant_id, food_id, price, price_note)\nVALUES ('SOHA_R', 'f7', 90, 'Soha demonstration only')",
+            "why": "Both parent IDs exist. The pair is unique.",
+            "expected": "1 row created.",
+            "results": [
+              {
+                "sql": "INSERT INTO contains(restaurant_id, food_id, price, price_note)\nVALUES ('SOHA_R', 'f7', 90, 'Soha demonstration only')",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the inserts",
+            "sql": "COMMIT",
+            "why": "Persist parent and menu so a separate session can read them.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Update your pair only",
+            "sql": "UPDATE contains SET price = 95\nWHERE restaurant_id = 'SOHA_R' AND food_id = 'f7'",
+            "why": "Both PK columns constrain the update to one restaurant–food offer.",
+            "expected": "1 row updated.",
+            "results": [
+              {
+                "sql": "UPDATE contains SET price = 95\nWHERE restaurant_id = 'SOHA_R' AND food_id = 'f7'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "writes",
+            "title": "Commit the price change",
+            "sql": "COMMIT",
+            "why": "Persist 95 as the current demonstration price.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S1 Verify the new price through joins",
+            "sql": "SELECT r.restaurant_name, f.food_name, m.price\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.restaurant_id='SOHA_R' AND m.food_id='f7'",
+            "why": "The join displays readable names while filtering by the composite identifier.",
+            "expected": "Soha Demo Counter, Masala Dosa, price 95.",
+            "results": [
+              {
+                "sql": "SELECT r.restaurant_name, f.food_name, m.price\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.restaurant_id='SOHA_R' AND m.food_id='f7'",
+                "rows": [
+                  {
+                    "RESTAURANT_NAME": "Soha Demo Counter",
+                    "FOOD_NAME": "Masala Dosa",
+                    "PRICE": 95
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S2 Find cheapest offers using analytic ranking",
+            "sql": "WITH ranked AS (\n SELECT m.*, DENSE_RANK() OVER\n  (PARTITION BY food_id ORDER BY price) AS pos\n FROM menu_catalog m\n)\nSELECT food_name, restaurant_name, price\nFROM ranked WHERE pos=1\nORDER BY food_name",
+            "why": "PARTITION BY starts ranking again for each dish. DENSE_RANK preserves ties, so several outlets can share first place.",
+            "expected": "Each dish appears at its cheapest listed outlet; tied cheapest offers all remain.",
+            "results": [
+              {
+                "sql": "WITH ranked AS (\n SELECT m.*, DENSE_RANK() OVER\n  (PARTITION BY food_id ORDER BY price) AS pos\n FROM menu_catalog m\n)\nSELECT food_name, restaurant_name, price\nFROM ranked WHERE pos=1\nORDER BY food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Chicken Noodle Bowl",
+                    "RESTAURANT_NAME": "Technology Tower Food Court",
+                    "PRICE": 160
+                  },
+                  {
+                    "FOOD_NAME": "Chocolate Brownie",
+                    "RESTAURANT_NAME": "One Food World",
+                    "PRICE": 85
+                  },
+                  {
+                    "FOOD_NAME": "Classic Veg Burger",
+                    "RESTAURANT_NAME": "One Food World",
+                    "PRICE": 110
+                  },
+                  {
+                    "FOOD_NAME": "Filter Coffee",
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "PRICE": 20
+                  },
+                  {
+                    "FOOD_NAME": "French Fries",
+                    "RESTAURANT_NAME": "One Food World",
+                    "PRICE": 80
+                  },
+                  {
+                    "FOOD_NAME": "Garden Fresh Salad",
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "PRICE": 120
+                  },
+                  {
+                    "FOOD_NAME": "Iced Latte",
+                    "RESTAURANT_NAME": "Technology Tower Food Court",
+                    "PRICE": 90
+                  },
+                  {
+                    "FOOD_NAME": "Idli Sambar",
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "PRICE": 35
+                  },
+                  {
+                    "FOOD_NAME": "Margherita Pizza",
+                    "RESTAURANT_NAME": "Technology Tower Food Court",
+                    "PRICE": 180
+                  },
+                  {
+                    "FOOD_NAME": "Masala Dosa",
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "PRICE": 60
+                  },
+                  {
+                    "FOOD_NAME": "Paneer Power Bowl",
+                    "RESTAURANT_NAME": "GDN Canteen",
+                    "PRICE": 130
+                  },
+                  {
+                    "FOOD_NAME": "Veg Fried Rice",
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "PRICE": 95
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S3 Compare prices to each outlet average",
+            "sql": "SELECT r.restaurant_name, f.food_name, m.price\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.price < (\n SELECT AVG(m2.price) FROM contains m2\n WHERE m2.restaurant_id=m.restaurant_id\n)\nORDER BY r.restaurant_name, m.price",
+            "why": "The correlated average is recalculated for the outer row's restaurant. An outlet with only one offer cannot be strictly below its own average.",
+            "expected": "Below-average offers appear; your single-menu fixture is absent.",
+            "results": [
+              {
+                "sql": "SELECT r.restaurant_name, f.food_name, m.price\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.price < (\n SELECT AVG(m2.price) FROM contains m2\n WHERE m2.restaurant_id=m.restaurant_id\n)\nORDER BY r.restaurant_name, m.price",
+                "rows": [
+                  {
+                    "RESTAURANT_NAME": "GDN Canteen",
+                    "FOOD_NAME": "Filter Coffee",
+                    "PRICE": 25
+                  },
+                  {
+                    "RESTAURANT_NAME": "GDN Canteen",
+                    "FOOD_NAME": "Idli Sambar",
+                    "PRICE": 40
+                  },
+                  {
+                    "RESTAURANT_NAME": "One Food World",
+                    "FOOD_NAME": "French Fries",
+                    "PRICE": 80
+                  },
+                  {
+                    "RESTAURANT_NAME": "One Food World",
+                    "FOOD_NAME": "Chocolate Brownie",
+                    "PRICE": 85
+                  },
+                  {
+                    "RESTAURANT_NAME": "One Food World",
+                    "FOOD_NAME": "Iced Latte",
+                    "PRICE": 100
+                  },
+                  {
+                    "RESTAURANT_NAME": "One Food World",
+                    "FOOD_NAME": "Classic Veg Burger",
+                    "PRICE": 110
+                  },
+                  {
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "FOOD_NAME": "Filter Coffee",
+                    "PRICE": 20
+                  },
+                  {
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "FOOD_NAME": "Idli Sambar",
+                    "PRICE": 35
+                  },
+                  {
+                    "RESTAURANT_NAME": "PRP Canteen",
+                    "FOOD_NAME": "Masala Dosa",
+                    "PRICE": 60
+                  },
+                  {
+                    "RESTAURANT_NAME": "SJT Canteen",
+                    "FOOD_NAME": "Filter Coffee",
+                    "PRICE": 30
+                  },
+                  {
+                    "RESTAURANT_NAME": "SJT Canteen",
+                    "FOOD_NAME": "Idli Sambar",
+                    "PRICE": 45
+                  },
+                  {
+                    "RESTAURANT_NAME": "Technology Tower Food Court",
+                    "FOOD_NAME": "Iced Latte",
+                    "PRICE": 90
+                  },
+                  {
+                    "RESTAURANT_NAME": "Technology Tower Food Court",
+                    "FOOD_NAME": "Veg Fried Rice",
+                    "PRICE": 110
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S4 Compare highest and lowest prices",
+            "sql": "SELECT f.food_name, COUNT(DISTINCT m.restaurant_id) AS outlets,\n MIN(m.price) AS lowest, MAX(m.price) AS highest,\n MAX(m.price)-MIN(m.price) AS saving\nFROM food_item f JOIN contains m ON m.food_id=f.food_id\nGROUP BY f.food_id, f.food_name\nHAVING COUNT(DISTINCT m.restaurant_id)>1\nORDER BY saving DESC, f.food_name",
+            "why": "Aggregates compare offers for the same dish; HAVING removes dishes offered at only one outlet.",
+            "expected": "Masala Dosa includes your 95 offer, affecting its highest price during this demo.",
+            "results": [
+              {
+                "sql": "SELECT f.food_name, COUNT(DISTINCT m.restaurant_id) AS outlets,\n MIN(m.price) AS lowest, MAX(m.price) AS highest,\n MAX(m.price)-MIN(m.price) AS saving\nFROM food_item f JOIN contains m ON m.food_id=f.food_id\nGROUP BY f.food_id, f.food_name\nHAVING COUNT(DISTINCT m.restaurant_id)>1\nORDER BY saving DESC, f.food_name",
+                "rows": [
+                  {
+                    "FOOD_NAME": "Masala Dosa",
+                    "OUTLETS": 4,
+                    "LOWEST": 60,
+                    "HIGHEST": 95,
+                    "SAVING": 35
+                  },
+                  {
+                    "FOOD_NAME": "Margherita Pizza",
+                    "OUTLETS": 2,
+                    "LOWEST": 180,
+                    "HIGHEST": 200,
+                    "SAVING": 20
+                  },
+                  {
+                    "FOOD_NAME": "Paneer Power Bowl",
+                    "OUTLETS": 2,
+                    "LOWEST": 130,
+                    "HIGHEST": 145,
+                    "SAVING": 15
+                  },
+                  {
+                    "FOOD_NAME": "Veg Fried Rice",
+                    "OUTLETS": 3,
+                    "LOWEST": 95,
+                    "HIGHEST": 110,
+                    "SAVING": 15
+                  },
+                  {
+                    "FOOD_NAME": "Filter Coffee",
+                    "OUTLETS": 3,
+                    "LOWEST": 20,
+                    "HIGHEST": 30,
+                    "SAVING": 10
+                  },
+                  {
+                    "FOOD_NAME": "Iced Latte",
+                    "OUTLETS": 2,
+                    "LOWEST": 90,
+                    "HIGHEST": 100,
+                    "SAVING": 10
+                  },
+                  {
+                    "FOOD_NAME": "Idli Sambar",
+                    "OUTLETS": 3,
+                    "LOWEST": 35,
+                    "HIGHEST": 45,
+                    "SAVING": 10
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "selects",
+            "title": "S5 Format prices with Oracle functions",
+            "sql": "SELECT r.restaurant_name, f.food_name,\n TO_CHAR(m.price, 'FM999990.00') AS formatted_price,\n ROUND(m.price * 0.90, 2) AS hypothetical_discount\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.restaurant_id='SOHA_R'",
+            "why": "TO_CHAR formats display text; ROUND computes a hypothetical 10 percent discount. It does not update stored prices or claim a real promotion.",
+            "expected": "Formatted price 95.00 and hypothetical discount price 85.5.",
+            "results": [
+              {
+                "sql": "SELECT r.restaurant_name, f.food_name,\n TO_CHAR(m.price, 'FM999990.00') AS formatted_price,\n ROUND(m.price * 0.90, 2) AS hypothetical_discount\nFROM contains m\nJOIN restaurant r ON r.restaurant_id=m.restaurant_id\nJOIN food_item f ON f.food_id=m.food_id\nWHERE m.restaurant_id='SOHA_R'",
+                "rows": [
+                  {
+                    "RESTAURANT_NAME": "Soha Demo Counter",
+                    "FOOD_NAME": "Masala Dosa",
+                    "FORMATTED_PRICE": "95.00",
+                    "HYPOTHETICAL_DISCOUNT": 85.5
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "transactions",
+            "title": "Set a savepoint",
+            "sql": "SAVEPOINT before_price_change",
+            "why": "Mark the current transaction position after the committed 95 price.",
+            "expected": "Savepoint created.",
+            "results": [
+              {
+                "sql": "SAVEPOINT before_price_change",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "transactions",
+            "title": "Make an uncommitted change",
+            "sql": "UPDATE contains SET price=999\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+            "why": "Do not COMMIT between this update and ROLLBACK TO.",
+            "expected": "1 row updated.",
+            "results": [
+              {
+                "sql": "UPDATE contains SET price=999\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "transactions",
+            "title": "Show the temporary value",
+            "sql": "SELECT price FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+            "why": "Your own session sees its uncommitted change.",
+            "expected": "PRICE = 999.",
+            "results": [
+              {
+                "sql": "SELECT price FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+                "rows": [
+                  {
+                    "PRICE": 999
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "transactions",
+            "title": "Undo only the later change",
+            "sql": "ROLLBACK TO before_price_change",
+            "why": "Return to the savepoint; keep the row that was committed earlier.",
+            "expected": "Rollback complete.",
+            "results": [
+              {
+                "sql": "ROLLBACK TO before_price_change",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "transactions",
+            "title": "Verify the restored value",
+            "sql": "SELECT price FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+            "why": "The original committed value is restored.",
+            "expected": "PRICE = 95.",
+            "results": [
+              {
+                "sql": "SELECT price FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+                "rows": [
+                  {
+                    "PRICE": 95
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Delete the menu before its parent",
+            "sql": "DELETE FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7';\nDELETE FROM restaurant WHERE restaurant_id='SOHA_R'",
+            "why": "Remove the relationship first to respect the FK, then the isolated fixture.",
+            "expected": "Two separate 1 row deleted messages.",
+            "results": [
+              {
+                "sql": "DELETE FROM contains\nWHERE restaurant_id='SOHA_R' AND food_id='f7'",
+                "rows": [],
+                "rowsAffected": 1
+              },
+              {
+                "sql": "DELETE FROM restaurant WHERE restaurant_id='SOHA_R'",
+                "rows": [],
+                "rowsAffected": 1
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Commit cleanup",
+            "sql": "COMMIT",
+            "why": "Persist both deletions.",
+            "expected": "Commit complete.",
+            "results": [
+              {
+                "sql": "COMMIT",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "deletes",
+            "title": "Verify cleanup",
+            "sql": "SELECT COUNT(*) AS remaining FROM restaurant\nWHERE restaurant_id='SOHA_R'",
+            "why": "Your private parent fixture should be gone.",
+            "expected": "REMAINING = 0.",
+            "results": [
+              {
+                "sql": "SELECT COUNT(*) AS remaining FROM restaurant\nWHERE restaurant_id='SOHA_R'",
+                "rows": [
+                  {
+                    "REMAINING": 0
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "ddl",
+            "title": "Create a scratch table",
+            "sql": "CREATE TABLE soha_ddl_demo (demo_id NUMBER PRIMARY KEY)",
+            "why": "Use an isolated scratch table; never recreate existing project tables.",
+            "expected": "Table created.",
+            "results": [
+              {
+                "sql": "CREATE TABLE soha_ddl_demo (demo_id NUMBER PRIMARY KEY)",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "ddl",
+            "title": "Alter the scratch table",
+            "sql": "ALTER TABLE soha_ddl_demo ADD note VARCHAR2(40)",
+            "why": "Add a column using DDL.",
+            "expected": "Table altered.",
+            "results": [
+              {
+                "sql": "ALTER TABLE soha_ddl_demo ADD note VARCHAR2(40)",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          },
+          {
+            "group": "ddl",
+            "title": "Verify the added column",
+            "sql": "SELECT column_name, data_type FROM user_tab_columns\nWHERE table_name='SOHA_DDL_DEMO' ORDER BY column_id",
+            "why": "Read Oracle metadata to prove the ALTER worked.",
+            "expected": "DEMO_ID NUMBER and NOTE VARCHAR2.",
+            "results": [
+              {
+                "sql": "SELECT column_name, data_type FROM user_tab_columns\nWHERE table_name='SOHA_DDL_DEMO' ORDER BY column_id",
+                "rows": [
+                  {
+                    "COLUMN_NAME": "DEMO_ID",
+                    "DATA_TYPE": "NUMBER"
+                  },
+                  {
+                    "COLUMN_NAME": "NOTE",
+                    "DATA_TYPE": "VARCHAR2"
+                  }
+                ],
+                "rowsAffected": null
+              }
+            ]
+          },
+          {
+            "group": "ddl",
+            "title": "Drop only the scratch table",
+            "sql": "DROP TABLE soha_ddl_demo PURGE",
+            "why": "Remove the table created specifically for this demonstration. Oracle DDL commits implicitly.",
+            "expected": "Table dropped.",
+            "results": [
+              {
+                "sql": "DROP TABLE soha_ddl_demo PURGE",
+                "rows": [],
+                "rowsAffected": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "sourceCommit": "9a2748c",
+  "generatedAt": "2026-10-29T15:32:08.318Z"
+}
