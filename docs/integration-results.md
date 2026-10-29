@@ -1,6 +1,6 @@
 # Integration verification
 
-Executed 2026-10-29T14:32:13.025Z against http://localhost:3000.
+Executed 2026-10-29T15:07:29.642Z against http://localhost:3000.
 
 - Unauthenticated management access rejected: OK
 - Catalog reads live Oracle: OK
