@@ -22,7 +22,7 @@ The **admin key** is a generated password for the application's management scree
 - Open `.env.local` in your editor privately.
 - Find `ADMIN_TOKEN=...` and copy only the value after `=`.
 - Open http://localhost:3000/manage directly and paste it into Admin key, then choose Sign in.
-- The signed browser session lasts eight hours. The public homepage has no management/SQL/source links; open these URLs directly when demonstrating.
+- The signed browser session lasts eight hours. Use Admin access in the homepage footer to open management. Open /demo directly for the optional SQL rehearsal page.
 
 Oracle credentials are different: `ORACLE_USER`, `ORACLE_PASSWORD` and `ORACLE_CONNECT_STRING` are used only by the server and SQL helper. The SQL helper reads them automatically; no need to display or type them during the demo.
 
