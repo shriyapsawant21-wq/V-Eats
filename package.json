@@ -14,7 +14,8 @@
     "db:capture": "node --env-file=.env.local --experimental-strip-types scripts/capture-oracle.ts",
     "report": "node scripts/build-report.mjs",
     "sql:demo": "node --env-file=.env.local scripts/backend-demo.mjs",
-    "db:audit": "node --env-file=.env.local --experimental-strip-types scripts/audit-schema.ts"
+    "db:audit": "node --env-file=.env.local --experimental-strip-types scripts/audit-schema.ts",
+    "test:restaurant": "node --env-file=.env.local scripts/verify-restaurant-form.mjs"
   },
   "repository": {
     "type": "git",
