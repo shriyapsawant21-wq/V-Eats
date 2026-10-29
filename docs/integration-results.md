@@ -1,0 +1,66 @@
+# Integration verification
+
+Executed 2026-10-29T14:32:13.025Z against http://localhost:3000.
+
+- Unauthenticated management access rejected: OK
+- Catalog reads live Oracle: OK
+- Display restaurant: 5 rows
+- Display food_item: 12 rows
+- Display contains: 23 rows
+- Display has_allergen: 12 rows
+- Display category: 4 rows
+- Display cuisine: 4 rows
+- Display dietary_type: 3 rows
+- Display allergen: 5 rows
+- POST category: OK
+- Search category: OK
+- POST cuisine: OK
+- Search cuisine: OK
+- POST dietary_type: OK
+- Search dietary_type: OK
+- POST allergen: OK
+- Search allergen: OK
+- POST restaurant: OK
+- Search restaurant: OK
+- POST food_item: OK
+- Search food_item: OK
+- POST contains: OK
+- Search contains: OK
+- POST has_allergen: OK
+- Search has_allergen: OK
+- PUT category: OK
+- PUT cuisine: OK
+- PUT dietary_type: OK
+- PUT allergen: OK
+- PUT restaurant: OK
+- PUT food_item: OK
+- PUT contains: OK
+- PUT has_allergen relationship: OK
+- Committed price, allergen and category-name updates visible in discovery catalog: OK
+- Duplicate primary key rejected: OK
+- Invalid foreign key rejected: OK
+- Referenced parent deletion rejected: OK
+- Negative price rejected: OK
+- Live transaction API restores savepoint and rolls back insert: OK
+- SQL report menu: 3 rows
+- SQL report value: 13 rows
+- SQL report below-average: 13 rows
+- SQL report milk-free: 6 rows
+- SQL report summary: 5 rows
+- SQL report allergens: 13 rows
+- SQL report coverage: 0 rows
+- SQL report compare: 7 rows
+- SQL report set: 3 rows
+- SQL report functions: 6 rows
+- SQL report constraints: 38 rows
+- SQL report tables: 31 rows
+- DELETE has_allergen: OK
+- DELETE contains: OK
+- DELETE food_item: OK
+- DELETE restaurant: OK
+- DELETE allergen: OK
+- DELETE dietary_type: OK
+- DELETE cuisine: OK
+- DELETE category: OK
+- Deletion verified using independent Oracle connection: OK
+- ROLLBACK removes uncommitted insert: OK
